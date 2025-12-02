@@ -148,6 +148,7 @@ export default function DashboardPage() {
     };
     setChatMessages((prev) => [...prev, userMessage]);
     setDraftMessage("");
+    inputRef.current?.focus();
 
     try {
       const response = await fetch(`${AGENT_HELLO_HOST}:${port}/hello-agent`, {
@@ -258,7 +259,13 @@ export default function DashboardPage() {
         )}
       </div>
       <div className="space-y-3">
-        <div className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-white px-4 py-2">
+        <form
+          className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-white px-4 py-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSendMessage();
+          }}
+        >
                     <textarea
                       className="h-14 flex-1 resize-none border-none bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                       rows={3}
@@ -277,11 +284,15 @@ export default function DashboardPage() {
             type="button"
             size="sm"
             className="h-12 w-12 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_10px_25px_rgba(56,189,248,0.4)] hover:from-sky-400 hover:to-blue-500"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              inputRef.current?.focus();
+            }}
             onClick={handleSendMessage}
           >
             <MessageCircle className="h-5 w-5 text-white" />
           </Button>
-        </div>
+        </form>
       </div>
     </div>
   );
