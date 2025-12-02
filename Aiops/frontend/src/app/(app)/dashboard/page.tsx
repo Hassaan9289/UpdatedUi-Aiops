@@ -2,6 +2,7 @@
 
 import { Activity, Bot, MessageCircle, Pause, Play, Square, User } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useAIOpsStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/KpiCard";
@@ -86,20 +87,32 @@ export default function DashboardPage() {
     };
   }, [incidents, runbooks]);
 
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [chatMessages, setChatMessages] = useState<{ speaker: string; text: string; id: number }[]>([]);
   const [draftMessage, setDraftMessage] = useState("");
+  const [typingAnimation, setTypingAnimation] = useState<{ messageId: number; text: string } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+
+  const queueAgentResponse = (reply: string) => {
+    if (!chatAgent) return;
+    const messageId = Date.now() + 1;
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        speaker: chatAgent.name,
+        text: "",
+        id: messageId,
+      },
+    ]);
+    setTypingAnimation({ messageId, text: reply });
+    setIsTyping(true);
+  };
 
   useEffect(() => {
     if (!chatAgent) return;
-    setChatMessages([
-      {
-        speaker: chatAgent.name,
-        text: "I am Agent and I'm ready to help.",
-        id: Date.now(),
-      },
-    ]);
+    setChatMessages([]);
     setDraftMessage("");
+    queueAgentResponse("I am Agent and I'm ready to help.");
   }, [chatAgent]);
 
   const handleSendMessage = async () => {
@@ -115,7 +128,6 @@ export default function DashboardPage() {
     };
     setChatMessages((prev) => [...prev, userMessage]);
     setDraftMessage("");
-    setIsTyping(true);
 
     try {
       const response = await fetch(`${AGENT_HELLO_HOST}:${port}/hello-agent`, {
@@ -128,30 +140,48 @@ export default function DashboardPage() {
       });
       const data = await response.json();
       await new Promise((resolve) => setTimeout(resolve, 700));
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          speaker: chatAgent.name,
-          text: data?.reply ?? "Sorry, I could not respond right now.",
-          id: Date.now() + 1,
-        },
-      ]);
+      queueAgentResponse(data?.reply ?? "Sorry, I could not respond right now.");
     } catch (error) {
       console.error("Chat error", error);
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          speaker: chatAgent.name,
-          text: "I couldn't reach the assistant, please try again later.",
-          id: Date.now() + 1,
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
+      queueAgentResponse("I couldn't reach the assistant, please try again later.");
     }
   };
 
-useEffect(() => {
+  useEffect(() => {
+    if (!typingAnimation) return;
+    const { messageId, text } = typingAnimation;
+    let index = 0;
+    const stepDelay = 35;
+    const interval = setInterval(() => {
+      index += 1;
+      setChatMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId ? { ...message, text: text.slice(0, Math.min(index, text.length)) } : message,
+        ),
+      );
+      if (index >= text.length) {
+        clearInterval(interval);
+        setTypingAnimation(null);
+        setIsTyping(false);
+      }
+    }, stepDelay);
+    return () => clearInterval(interval);
+  }, [typingAnimation]);
+
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [chatMessages, typingAnimation]);
+
+  useEffect(() => {
+    if (!chatAgent) {
+      setTypingAnimation(null);
+      setIsTyping(false);
+    }
+  }, [chatAgent]);
+
+  useEffect(() => {
     let isActive = true;
     setBackendLoading(true);
     setBackendError(null);
@@ -464,7 +494,7 @@ useEffect(() => {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
               <div className="w-full max-w-md rounded-xl border border-white/10 bg-[var(--surface)] p-6 shadow-2xl">
                 <p className="text-lg font-semibold text-[var(--text)]">
-                  {confirm.action === 'start' ? 'Start agent' : 'Stop agent'}
+                  {confirm.action === 'start' ? 'Start' : 'Stop'}
                 </p>
                 <p className="mt-2 text-sm text-white/70">
                   Are you sure you want to {confirm.action} <span className="font-semibold">{confirm.name}</span>?
@@ -507,13 +537,16 @@ useEffect(() => {
                     Close
                   </Button>
                 </div>
-                <div className="flex-1 overflow-auto rounded-[32px] border border-slate-200 bg-slate-50 p-4">
+                <div
+                  ref={chatContainerRef}
+                  className="flex-1 overflow-auto rounded-[32px] border border-slate-200 bg-slate-50 p-4"
+                >
                   <div className="space-y-4">
-                    {chatMessages.map((message, index) => {
+                    {chatMessages.map((message) => {
                       const isUser = message.speaker === "You";
                       return (
                         <div
-                          key={index}
+                          key={message.id}
                           className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
                         >
                           {!isUser && (
@@ -531,7 +564,18 @@ useEffect(() => {
                             <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
                               {isUser ? "You" : "Agent"}
                             </p>
-                            <p className="text-base">{message.text}</p>
+                            <div className="text-base whitespace-pre-wrap">
+                              <ReactMarkdown
+                                components={{
+                                  p: ({ node, ...props }) => <p className="text-base" {...props} />,
+                                  strong: ({ node, ...props }) => (
+                                    <strong className="font-semibold text-slate-900" {...props} />
+                                  ),
+                                }}
+                              >
+                                {message.text ?? ""}
+                              </ReactMarkdown>
+                            </div>
                           </div>
                           {isUser && (
                             <span className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-900">

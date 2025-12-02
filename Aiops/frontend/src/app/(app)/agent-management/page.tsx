@@ -615,7 +615,7 @@ export default function AgentManagementPage() {
                     {agent.running ? (
                       <>
                         <Power className="h-4 w-4" />
-                        Stop agent
+                        Stop
                       </>
                     ) : (
                       <>
