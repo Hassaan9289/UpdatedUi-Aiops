@@ -1,7 +1,7 @@
 'use client';
 
 import { Activity, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAIOpsStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
@@ -92,6 +92,7 @@ export default function DashboardPage() {
   }, [incidents, runbooks]);
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const [chatMessages, setChatMessages] = useState<{ speaker: string; text: string; id: number }[]>([]);
   const [draftMessage, setDraftMessage] = useState("");
   const [typingAnimation, setTypingAnimation] = useState<{ messageId: number; text: string } | null>(null);
@@ -99,12 +100,10 @@ export default function DashboardPage() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
-    const container = chatContainerRef.current;
-    if (!container) return;
+    const anchor = chatBottomRef.current;
+    if (!anchor) return;
     requestAnimationFrame(() => {
-      container.style.scrollBehavior = behavior;
-      container.scrollTop = container.scrollHeight;
-      container.style.scrollBehavior = "auto";
+      anchor.scrollIntoView({ behavior, block: "end" });
     });
   }, []);
   const streamingScrollRef = useRef<number | null>(null);
@@ -247,6 +246,7 @@ export default function DashboardPage() {
               </div>
             );
           })}
+          <div ref={chatBottomRef} className="h-px w-full" aria-hidden="true" />
         </div>
         {isTyping && (
           <p className="text-xs italic text-slate-500">Agent is typing...</p>
@@ -289,6 +289,7 @@ export default function DashboardPage() {
           message.id === messageId ? { ...message, text: text.slice(0, Math.min(index, text.length)) } : message,
         ),
       );
+      scrollToBottom("auto");
       if (index >= text.length) {
         clearInterval(interval);
         setTypingAnimation(null);
@@ -296,18 +297,18 @@ export default function DashboardPage() {
       }
     }, stepDelay);
     return () => clearInterval(interval);
-  }, [typingAnimation]);
+  }, [typingAnimation, scrollToBottom]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!chatMessages.length) return;
-    const behavior = typingAnimation ? "smooth" : "auto";
+    const behavior = typingAnimation ? "auto" : "smooth";
     scrollToBottom(behavior);
-  }, [chatMessages.length, typingAnimation, scrollToBottom]);
+  }, [chatMessages, typingAnimation, scrollToBottom]);
 
   useEffect(() => {
     if (!typingAnimation) return;
     const step = () => {
-      scrollToBottom("smooth");
+      scrollToBottom("auto");
       streamingScrollRef.current = requestAnimationFrame(step);
     };
     streamingScrollRef.current = requestAnimationFrame(step);
