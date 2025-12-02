@@ -1,0 +1,10 @@
+<svg width="240" height="72" viewBox="0 0 240 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="72" rx="12" fill="#0E2C4B"/>
+  <path d="M152 0h88v72h-88l-16-18V18l16-18z" fill="#051324"/>
+  <text x="24" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="24" letter-spacing="6" fill="#DAE6F5">
+    ROYAL
+  </text>
+  <text x="156" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="24" letter-spacing="6" fill="#4F8AC9">
+    CYBER
+  </text>
+</svg>
