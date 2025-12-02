@@ -107,6 +107,11 @@ export default function DashboardPage() {
     });
   }, []);
   const streamingScrollRef = useRef<number | null>(null);
+  const pinToBottomOnFocus = useCallback(() => {
+    scrollToBottom("auto");
+    requestAnimationFrame(() => scrollToBottom("auto"));
+    setTimeout(() => scrollToBottom("auto"), 60);
+  }, [scrollToBottom]);
 
   const queueAgentResponse = (reply: string) => {
     if (!chatAgent) return;
@@ -261,7 +266,11 @@ export default function DashboardPage() {
                       value={draftMessage}
                       onChange={(event) => setDraftMessage(event.target.value)}
                       ref={inputRef}
-                      onFocus={() => setIsInputFocused(true)}
+                      onFocus={() => {
+                        setIsInputFocused(true);
+                        pinToBottomOnFocus();
+                      }}
+                      onClick={pinToBottomOnFocus}
                       onBlur={() => setIsInputFocused(false)}
                     />
           <Button
@@ -327,6 +336,11 @@ export default function DashboardPage() {
     el.setSelectionRange(pos, pos);
     el.focus();
   }, [draftMessage, isInputFocused]);
+
+  useEffect(() => {
+    if (!isInputFocused) return;
+    pinToBottomOnFocus();
+  }, [isInputFocused, pinToBottomOnFocus]);
 
   useEffect(() => {
     if (!chatAgent) {
