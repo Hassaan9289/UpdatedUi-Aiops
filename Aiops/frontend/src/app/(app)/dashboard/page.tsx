@@ -112,6 +112,10 @@ export default function DashboardPage() {
     requestAnimationFrame(() => scrollToBottom("auto"));
     setTimeout(() => scrollToBottom("auto"), 60);
   }, [scrollToBottom]);
+  const pinOnButtonInteraction = useCallback(() => {
+    requestAnimationFrame(() => scrollToBottom("auto"));
+    setTimeout(() => scrollToBottom("auto"), 60);
+  }, [scrollToBottom]);
 
   const queueAgentResponse = (reply: string) => {
     if (!chatAgent) return;
@@ -177,6 +181,12 @@ export default function DashboardPage() {
   }) => (
     <div
       className={`flex w-full flex-col gap-4 overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl ${className}`}
+      onMouseDownCapture={(event) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest("button")) {
+          pinOnButtonInteraction();
+        }
+      }}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -366,6 +376,12 @@ export default function DashboardPage() {
     const id = requestAnimationFrame(() => scrollToBottom("auto"));
     return () => cancelAnimationFrame(id);
   }, [chatAgent, scrollToBottom]);
+
+  useEffect(() => {
+    if (!chatAgent) return;
+    requestAnimationFrame(() => scrollToBottom("auto"));
+    setTimeout(() => scrollToBottom("auto"), 80);
+  }, [isChatMaximized, chatAgent, scrollToBottom]);
 
   useEffect(() => {
     let isActive = true;
