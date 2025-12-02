@@ -1,7 +1,7 @@
 'use client';
 
-import { Activity, Bot, MessageCircle, Pause, Play, Square, User } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Activity, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAIOpsStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
@@ -68,7 +68,11 @@ export default function DashboardPage() {
   const { agents, performAgentAction } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<AgentSummary | null>(null);
   const [chatAgent, setChatAgent] = useState<AgentSummary | null>(null);
-  const closeChatDrawer = () => setChatAgent(null);
+  const [isChatMaximized, setIsChatMaximized] = useState(false);
+  const closeChatDrawer = () => {
+    setIsChatMaximized(false);
+    setChatAgent(null);
+  };
   const [agentLogs, setAgentLogs] = useState<Record<string, { t: string; m: string }[]>>({});
   const [confirm, setConfirm] = useState<{ name: string; action: 'start' | 'stop' } | null>(null);
 
@@ -92,6 +96,18 @@ export default function DashboardPage() {
   const [draftMessage, setDraftMessage] = useState("");
   const [typingAnimation, setTypingAnimation] = useState<{ messageId: number; text: string } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    requestAnimationFrame(() => {
+      container.style.scrollBehavior = behavior;
+      container.scrollTop = container.scrollHeight;
+      container.style.scrollBehavior = "auto";
+    });
+  }, []);
+  const streamingScrollRef = useRef<number | null>(null);
 
   const queueAgentResponse = (reply: string) => {
     if (!chatAgent) return;
@@ -147,6 +163,120 @@ export default function DashboardPage() {
     }
   };
 
+  const ChatWindowContent = ({
+    headerActions,
+    className = "",
+  }: {
+    headerActions?: ReactNode;
+    className?: string;
+  }) => (
+    <div
+      className={`flex w-full flex-col gap-4 overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl ${className}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-slate-100 text-slate-900">
+            <Bot className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Agent chat</p>
+            <h3 className="text-3xl font-semibold text-slate-900">{chatAgent?.name}</h3>
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
+              <span>Online</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {headerActions}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-slate-500 hover:text-slate-900"
+            onClick={closeChatDrawer}
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-auto rounded-[32px] border border-slate-200 bg-slate-50 p-4"
+      >
+        <div className="space-y-4">
+          {chatMessages.map((message) => {
+            const isUser = message.speaker === "You";
+            return (
+              <div
+                key={message.id}
+                className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
+              >
+                {!isUser && (
+                  <span className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-slate-100 text-slate-400">
+                    <Bot className="h-5 w-5" />
+                  </span>
+                )}
+                <div
+                  className={`max-w-[78%] space-y-1 rounded-2xl border px-4 py-3 break-words ${
+                    isUser
+                      ? "border-slate-200 bg-white text-[#1d1464]"
+                      : "border-slate-200 bg-slate-200/70 text-slate-700"
+                  } ${isUser ? "text-right" : "text-left"}`}
+                >
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
+                    {isUser ? "You" : "Agent"}
+                  </p>
+                  <div className="text-base whitespace-pre-wrap">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ node, ...props }) => <p className="text-base" {...props} />,
+                        strong: ({ node, ...props }) => (
+                          <strong className="font-semibold text-slate-900" {...props} />
+                        ),
+                      }}
+                    >
+                      {message.text ?? ""}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+                {isUser && (
+                  <span className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-900">
+                    <User className="h-5 w-5" />
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {isTyping && (
+          <p className="text-xs italic text-slate-500">Agent is typing...</p>
+        )}
+      </div>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-white px-4 py-2">
+                    <textarea
+                      className="h-14 flex-1 resize-none border-none bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                      rows={3}
+                      placeholder="Ask something…"
+                      value={draftMessage}
+                      onChange={(event) => setDraftMessage(event.target.value)}
+                      ref={inputRef}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
+                    />
+          <Button
+            type="button"
+            size="sm"
+            className="h-12 w-12 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_10px_25px_rgba(56,189,248,0.4)] hover:from-sky-400 hover:to-blue-500"
+            onClick={handleSendMessage}
+          >
+            <MessageCircle className="h-5 w-5 text-white" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     if (!typingAnimation) return;
     const { messageId, text } = typingAnimation;
@@ -169,17 +299,47 @@ export default function DashboardPage() {
   }, [typingAnimation]);
 
   useEffect(() => {
-    const container = chatContainerRef.current;
-    if (!container) return;
-    container.scrollTop = container.scrollHeight;
-  }, [chatMessages, typingAnimation]);
+    if (!chatMessages.length) return;
+    const behavior = typingAnimation ? "smooth" : "auto";
+    scrollToBottom(behavior);
+  }, [chatMessages.length, typingAnimation, scrollToBottom]);
+
+  useEffect(() => {
+    if (!typingAnimation) return;
+    const step = () => {
+      scrollToBottom("smooth");
+      streamingScrollRef.current = requestAnimationFrame(step);
+    };
+    streamingScrollRef.current = requestAnimationFrame(step);
+    return () => {
+      if (streamingScrollRef.current) {
+        cancelAnimationFrame(streamingScrollRef.current);
+      }
+    };
+  }, [typingAnimation, scrollToBottom]);
+
+  useEffect(() => {
+    if (!isInputFocused) return;
+    const el = inputRef.current;
+    if (!el) return;
+    const pos = el.value.length;
+    el.setSelectionRange(pos, pos);
+    el.focus();
+  }, [draftMessage, isInputFocused]);
 
   useEffect(() => {
     if (!chatAgent) {
       setTypingAnimation(null);
       setIsTyping(false);
+      setIsChatMaximized(false);
     }
   }, [chatAgent]);
+
+  useEffect(() => {
+    if (!chatAgent) return;
+    const id = requestAnimationFrame(() => scrollToBottom("auto"));
+    return () => cancelAnimationFrame(id);
+  }, [chatAgent, scrollToBottom]);
 
   useEffect(() => {
     let isActive = true;
@@ -515,102 +675,52 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {chatAgent && (
+          {chatAgent && !isChatMaximized && (
             <>
               <div className="fixed inset-0 z-40 bg-black/20" onClick={closeChatDrawer} />
-              <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col gap-4 overflow-hidden rounded-l-[36px] border border-slate-200 bg-white p-6 shadow-2xl text-slate-900">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-slate-100 text-slate-900">
-                      <Bot className="h-6 w-6" />
-                    </span>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Agent chat</p>
-                      <h3 className="text-3xl font-semibold text-slate-900">{chatAgent.name}</h3>
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
-                        <span>Online</span>
-                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      </div>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="ghost" className="text-slate-500 hover:text-slate-900" onClick={closeChatDrawer}>
-                    Close
-                  </Button>
-                </div>
-                <div
-                  ref={chatContainerRef}
-                  className="flex-1 overflow-auto rounded-[32px] border border-slate-200 bg-slate-50 p-4"
-                >
-                  <div className="space-y-4">
-                    {chatMessages.map((message) => {
-                      const isUser = message.speaker === "You";
-                      return (
-                        <div
-                          key={message.id}
-                          className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
-                        >
-                          {!isUser && (
-                            <span className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-slate-100 text-slate-400">
-                              <Bot className="h-5 w-5" />
-                            </span>
-                          )}
-                          <div
-                            className={`max-w-[78%] space-y-1 rounded-2xl border px-4 py-3 break-words ${
-                              isUser
-                                ? "border-slate-200 bg-white text-[#1d1464]"
-                                : "border-slate-200 bg-slate-200/70 text-slate-700"
-                            } ${isUser ? "text-right" : "text-left"}`}
-                          >
-                            <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
-                              {isUser ? "You" : "Agent"}
-                            </p>
-                            <div className="text-base whitespace-pre-wrap">
-                              <ReactMarkdown
-                                components={{
-                                  p: ({ node, ...props }) => <p className="text-base" {...props} />,
-                                  strong: ({ node, ...props }) => (
-                                    <strong className="font-semibold text-slate-900" {...props} />
-                                  ),
-                                }}
-                              >
-                                {message.text ?? ""}
-                              </ReactMarkdown>
-                            </div>
-                          </div>
-                          {isUser && (
-                            <span className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-900">
-                              <User className="h-5 w-5" />
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {isTyping && (
-                    <p className="text-xs italic text-slate-500">Agent is typing...</p>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-white px-4 py-2">
-                    <textarea
-                      className="h-14 flex-1 resize-none border-none bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
-                      rows={3}
-                      placeholder="Ask something…"
-                      value={draftMessage}
-                      onChange={(event) => setDraftMessage(event.target.value)}
-                    />
+              <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm items-stretch px-3">
+                <ChatWindowContent
+                  className="h-screen rounded-l-[36px]"
+                  headerActions={
                     <Button
-                      type="button"
                       size="sm"
-                      className="h-12 w-12 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_10px_25px_rgba(56,189,248,0.4)] hover:from-sky-400 hover:to-blue-500"
-                      onClick={handleSendMessage}
+                      variant="ghost"
+                      className="text-slate-500 hover:text-slate-900"
+                      onClick={() => setIsChatMaximized(true)}
+                      aria-label="Maximize chat"
                     >
-                      <MessageCircle className="h-5 w-5 text-white" />
+                      <Maximize2 className="h-4 w-4" />
                     </Button>
-                  </div>
-                </div>
+                  }
+                />
               </div>
             </>
+          )}
+          {chatAgent && isChatMaximized && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-6"
+              onClick={() => setIsChatMaximized(false)}
+            >
+              <div
+                className="w-full max-w-[920px] rounded-[42px]"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <ChatWindowContent
+                  className="h-[min(90vh,620px)] w-full"
+                  headerActions={
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-slate-500 hover:text-slate-900"
+                      onClick={() => setIsChatMaximized(false)}
+                      aria-label="Minimize chat"
+                    >
+                      <Minimize2 className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
           )}
 
           <section id="recent-incidents" className="grid gap-6">
