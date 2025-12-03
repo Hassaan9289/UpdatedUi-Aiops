@@ -616,14 +616,57 @@ export default function AgentManagementPage() {
     <AuthGate>
       <RequireRole roles={["admin", "operator"]}>
         <section className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-[240px]">
               <p className="section-title">Agent management</p>
               <p className="text-sm text-white/60">Lifecycle, versioning, and health of deployed agents.</p>
             </div>
-            <Button variant="default" className="px-5 py-3 text-sm font-medium tracking-[0.15em]" onClick={openModal}>
-              + Create new agent
-            </Button>
+            <div className="flex flex-1 min-w-[240px] justify-center">
+              <div className="relative w-full max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  className="w-full rounded-lg border border-slate-200/80 bg-white/80 px-9 py-2 text-sm text-slate-800 placeholder:text-slate-400 shadow-[0_6px_20px_rgba(15,23,42,0.05)] focus:border-slate-400 focus:outline-none"
+                  placeholder="Search Agent"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex min-w-[200px] justify-end">
+              <Button variant="default" className="px-5 py-3 text-sm font-medium tracking-[0.15em]" onClick={openModal}>
+                + Create new agent
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Total agents</p>
+              <p className="text-2xl font-semibold">{agents.length}</p>
+              <p className="text-xs text-emerald-200">+2 new this week</p>
+            </Card>
+            <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Online</p>
+              <p className="text-2xl font-semibold">{agents.filter((a) => a.running).length}</p>
+              <p className="text-xs text-emerald-200">All healthy</p>
+            </Card>
+            <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Offline</p>
+              <p className="text-2xl font-semibold">{agents.filter((a) => !a.running).length}</p>
+              <p className="text-xs text-rose-200">Review connectivity</p>
+            </Card>
+            <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Avg. start port</p>
+              <p className="text-2xl font-semibold">
+                {(() => {
+                  const ports = agents.filter((a) => a.running && a.port).map((a) => a.port as number);
+                  if (!ports.length) return "—";
+                  const avg = Math.round(ports.reduce((s, p) => s + p, 0) / ports.length);
+                  return avg;
+                })()}
+              </p>
+              <p className="text-xs text-white/70">Sample static metric</p>
+            </Card>
           </div>
           {successMessage && successActive && (
             <div className="pointer-events-none fixed right-6 bottom-6 flex max-w-sm px-4">
@@ -638,21 +681,9 @@ export default function AgentManagementPage() {
               </div>
             </div>
           )}
-          <div className="flex justify-center">
-            <div className="relative w-full max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="w-full rounded-lg border border-slate-200/80 bg-white/80 px-9 py-2 text-sm text-slate-800 placeholder:text-slate-400 shadow-[0_6px_20px_rgba(15,23,42,0.05)] focus:border-slate-400 focus:outline-none"
-                placeholder="Search Agent"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-            </div>
-          </div>
-
-          <Card className="overflow-hidden border border-slate-200/80 bg-white/90 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)] mt-4">
+          <Card className="overflow-hidden border border-slate-200/80 bg-white/90 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)] mt-2">
             <div className="overflow-x-auto">
-              <table className="min-w-[720px] w-full text-sm text-slate-800">
+              <table className="min-w-[720px] w-full text-sm">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                     <th className="px-4 py-3 text-left">
@@ -703,7 +734,7 @@ export default function AgentManagementPage() {
                     <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/80">
+                <tbody className="divide-y divide-slate-200/80 text-slate-800">
                   {sortedAgents.map((agent) => {
                     const statusLabel = agent.running ? "Online" : "Offline";
                     const portLabel = agent.running && agent.port ? agent.port : "Agent Not Started";
