@@ -705,7 +705,7 @@ export default function AgentManagementPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200/80">
                   {sortedAgents.map((agent) => {
-                    const statusLabel = agent.running ? "Running" : "Stopped";
+                    const statusLabel = agent.running ? "Online" : "Offline";
                     const portLabel = agent.running && agent.port ? agent.port : "Agent Not Started";
                     return (
                       <tr key={agent.name} className="bg-white/85 transition-colors hover:bg-slate-50">
@@ -723,7 +723,16 @@ export default function AgentManagementPage() {
                           {agent.lastActionTime}
                         </td>
                         <td className="px-4 py-3 text-center text-slate-700">{portLabel}</td>
-                        <td className="px-4 py-3 text-center text-slate-700">{statusLabel}</td>
+                        <td className="px-4 py-3 text-center text-slate-700">
+                          <div className="flex items-center justify-center gap-2">
+                            <span
+                              className={`h-2.5 w-2.5 rounded-full ${
+                                agent.running ? "bg-emerald-500" : "bg-slate-300"
+                              }`}
+                            />
+                            <span>{statusLabel}</span>
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <Button
                             type="button"
