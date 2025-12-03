@@ -120,11 +120,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-[var(--background)] text-[var(--text)]">
-      <aside className="group/side sticky top-0 hidden h-screen w-16 flex-shrink-0 overflow-y-auto no-scrollbar border-r border-[var(--border)] bg-[var(--surface)] px-2 py-6 transition-[width,padding] duration-300 hover:w-64 hover:px-6 lg:flex lg:flex-col">
-        <nav className="mt-8 flex-1 space-y-6 text-sm">
+      <aside className="group/side sticky top-0 hidden h-screen w-16 flex-shrink-0 overflow-y-auto no-scrollbar border-r border-slate-800 bg-slate-900 px-2 py-6 text-slate-100 transition-[width,padding] duration-300 hover:w-64 hover:px-4 lg:flex lg:flex-col">
+        <nav className="mt-4 flex-1 space-y-6 text-sm">
           {filteredNav.map((group) => (
             <div key={group.label}>
-              <p className="hidden text-xs uppercase tracking-wide text-[var(--muted)] group-hover/side:block">
+              <p className="hidden text-xs uppercase tracking-wide text-slate-300 font-semibold group-hover/side:block">
                 {group.label}
               </p>
               <div className="mt-2 space-y-1">
@@ -136,12 +136,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "flex items-center justify-center gap-0 rounded-none px-2 py-2 text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60",
-                        isActive && "bg-[var(--card-muted)] text-[var(--text)]",
+                        "flex items-center justify-center gap-0 rounded-md px-2 py-2 text-slate-100 transition hover:bg-slate-800 hover:text-slate-100 group-hover/side:justify-start group-hover/side:gap-3 group-hover/side:px-3",
+                        isActive && "bg-rose-600 text-white shadow-[0_10px_25px_rgba(244,63,94,0.35)] hover:bg-rose-700"
                       )}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span className="ml-0 hidden truncate group-hover/side:inline">{item.label}</span>
+                      <Icon className="h-4 w-4 text-slate-100" />
+                      <span className="ml-0 hidden truncate text-slate-100 group-hover/side:inline">{item.label}</span>
                     </Link>
                   );
                 })}
@@ -149,36 +149,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="hidden rounded-none border border-[var(--border)] bg-[var(--card-muted)] p-4 text-xs text-[var(--muted)] group-hover/side:block">
-          <p className="font-semibold text-[var(--text)]">Proactive posture</p>
-          <p className="mt-1">AI Agents watching 214 services continuously.</p>
-          <Button variant="muted" className="mt-3 w-full">
-            View runbooks
-          </Button>
-        </div>
-        <div className="mt-6 space-y-1 text-sm">
-          <p className="hidden px-3 text-xs uppercase tracking-wide text-[var(--muted)] group-hover/side:block">Support</p>
+        <div className="mt-6 hidden space-y-1 text-sm text-slate-100 group-hover/side:block">
+          <p className="px-3 text-xs uppercase tracking-wide text-slate-300 font-semibold">Support</p>
           <Link
             to="/account"
-            className="flex items-center justify-center gap-0 rounded-none px-2 py-2 text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60"
+            className="flex items-center justify-start gap-3 rounded-md px-3 py-2 text-slate-100 transition hover:bg-slate-800"
           >
-            <User className="h-4 w-4" />
-            <span className="ml-0 hidden truncate group-hover/side:inline">Profile</span>
+            <User className="h-4 w-4 text-slate-100" />
+            <span className="ml-0 truncate text-slate-100">Profile</span>
           </Link>
           <Link
             to="/settings"
-            className="flex items-center justify-center gap-0 rounded-none px-2 py-2 text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60"
+            className="flex items-center justify-start gap-3 rounded-md px-3 py-2 text-slate-100 transition hover:bg-slate-800"
           >
-            <Settings className="h-4 w-4" />
-            <span className="ml-0 hidden truncate group-hover/side:inline">Settings</span>
+            <Settings className="h-4 w-4 text-slate-100" />
+            <span className="ml-0 truncate text-slate-100">Settings</span>
           </Link>
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-0 rounded-none px-2 py-2 text-left text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60"
+            className="flex w-full items-center justify-start gap-3 rounded-md px-3 py-2 text-left text-red-300 transition hover:bg-red-500 hover:text-white"
             onClick={requestSignOut}
           >
             <LogOut className="h-4 w-4" />
-            <span className="ml-0 hidden truncate group-hover/side:inline">Logout</span>
+            <span className="ml-0 truncate">Sign Out</span>
           </button>
         </div>
       </aside>
