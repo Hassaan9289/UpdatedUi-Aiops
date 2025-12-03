@@ -78,6 +78,8 @@ export default function AgentManagementPage() {
   const [isValidatingName, setIsValidatingName] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "type" | "lastModified" | "port" | "status">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const filteredAgents = useMemo(
     () =>
       agents.filter((agent) =>
@@ -85,6 +87,45 @@ export default function AgentManagementPage() {
       ),
     [agents, searchTerm],
   );
+  const sortedAgents = useMemo(() => {
+    const copy = [...filteredAgents];
+    const directionFactor = sortDirection === "asc" ? 1 : -1;
+    const getSortValue = (agent: (typeof filteredAgents)[number]) => {
+      switch (sortBy) {
+        case "name":
+          return agent.name.toLowerCase();
+        case "type":
+          return (agent.type || "agent").toLowerCase();
+        case "status":
+          return agent.running ? 1 : 0;
+        case "port":
+          return agent.running && agent.port ? agent.port : Number.MAX_SAFE_INTEGER;
+        case "lastModified": {
+          const ts = new Date(agent.lastActionTime).getTime();
+          return Number.isFinite(ts) ? ts : 0;
+        }
+        default:
+          return agent.name.toLowerCase();
+      }
+    };
+    copy.sort((a, b) => {
+      const av = getSortValue(a);
+      const bv = getSortValue(b);
+      if (typeof av === "number" && typeof bv === "number") {
+        return (av - bv) * directionFactor;
+      }
+      return String(av).localeCompare(String(bv)) * directionFactor;
+    });
+    return copy;
+  }, [filteredAgents, sortBy, sortDirection]);
+  const toggleSort = (key: typeof sortBy) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDirection("asc");
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -614,16 +655,56 @@ export default function AgentManagementPage() {
               <table className="min-w-[720px] w-full text-sm text-slate-800">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    <th className="px-4 py-3 text-left">Name</th>
-                    <th className="px-4 py-3 text-center">Type</th>
-                    <th className="px-4 py-3 text-center">Last Modified</th>
-                    <th className="px-4 py-3 text-center">Port</th>
-                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="px-4 py-3 text-left">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 text-slate-600"
+                        onClick={() => toggleSort("name")}
+                      >
+                        Name {sortBy === "name" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-center gap-1 text-slate-600"
+                        onClick={() => toggleSort("type")}
+                      >
+                        Type {sortBy === "type" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-center gap-1 text-slate-600"
+                        onClick={() => toggleSort("lastModified")}
+                      >
+                        Last Modified {sortBy === "lastModified" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-center gap-1 text-slate-600"
+                        onClick={() => toggleSort("port")}
+                      >
+                        Port {sortBy === "port" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-center gap-1 text-slate-600"
+                        onClick={() => toggleSort("status")}
+                      >
+                        Status {sortBy === "status" ? (sortDirection === "asc" ? "▲" : "▼") : ""}
+                      </button>
+                    </th>
                     <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/80">
-                  {filteredAgents.map((agent) => {
+                  {sortedAgents.map((agent) => {
                     const statusLabel = agent.running ? "Running" : "Stopped";
                     const portLabel = agent.running && agent.port ? agent.port : "Agent Not Started";
                     return (
