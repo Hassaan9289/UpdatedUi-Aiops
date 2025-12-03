@@ -78,6 +78,8 @@ export default function AgentManagementPage() {
   const [isValidatingName, setIsValidatingName] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
   const [sortBy, setSortBy] = useState<"name" | "type" | "lastModified" | "port" | "status">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const filteredAgents = useMemo(
@@ -126,6 +128,15 @@ export default function AgentManagementPage() {
       setSortDirection("asc");
     }
   };
+  const totalPages = Math.max(1, Math.ceil(sortedAgents.length / pageSize));
+  const paginatedAgents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedAgents.slice(start, start + pageSize);
+  }, [currentPage, sortedAgents]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -735,7 +746,7 @@ export default function AgentManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/80 text-slate-800">
-                  {sortedAgents.map((agent) => {
+                  {paginatedAgents.map((agent) => {
                     const statusLabel = agent.running ? "Online" : "Offline";
                     const portLabel = agent.running && agent.port ? agent.port : "Agent Not Started";
                     return (
@@ -796,6 +807,51 @@ export default function AgentManagementPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-200/80 bg-white/90 px-4 py-4 text-sm text-slate-700">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${
+                  currentPage === 1
+                    ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                    : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                ← Prev
+              </button>
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const page = idx + 1;
+                const isActive = page === currentPage;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`min-w-[36px] rounded-full px-3 py-1 transition shadow-sm border ${
+                      isActive
+                        ? "border-slate-900 bg-slate-50 text-slate-900 font-bold shadow-[0_8px_22px_rgba(15,23,42,0.15)]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"
+                    }`}
+                    aria-label={`Go to page ${page}`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${
+                  currentPage === totalPages
+                    ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                    : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                Next →
+              </button>
             </div>
           </Card>
         </section>
