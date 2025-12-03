@@ -15,6 +15,8 @@ import {
   Server,
   ServerCog,
   Share2,
+  Settings,
+  User,
   UserCircle2,
   UserCog,
 } from "lucide-react";
@@ -118,7 +120,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-[var(--background)] text-[var(--text)]">
-      <aside className="group/side sticky top-0 hidden h-screen w-16 flex-shrink-0 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-2 py-6 transition-[width,padding] duration-300 hover:w-64 hover:px-6 lg:flex lg:flex-col">
+      <aside className="group/side sticky top-0 hidden h-screen w-16 flex-shrink-0 overflow-y-auto no-scrollbar border-r border-[var(--border)] bg-[var(--surface)] px-2 py-6 transition-[width,padding] duration-300 hover:w-64 hover:px-6 lg:flex lg:flex-col">
         <nav className="mt-8 flex-1 space-y-6 text-sm">
           {filteredNav.map((group) => (
             <div key={group.label}>
@@ -153,6 +155,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Button variant="muted" className="mt-3 w-full">
             View runbooks
           </Button>
+        </div>
+        <div className="mt-6 space-y-1 text-sm">
+          <p className="hidden px-3 text-xs uppercase tracking-wide text-[var(--muted)] group-hover/side:block">Support</p>
+          <Link
+            to="/account"
+            className="flex items-center justify-center gap-0 rounded-none px-2 py-2 text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60"
+          >
+            <User className="h-4 w-4" />
+            <span className="ml-0 hidden truncate group-hover/side:inline">Profile</span>
+          </Link>
+          <Link
+            to="/settings"
+            className="flex items-center justify-center gap-0 rounded-none px-2 py-2 text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60"
+          >
+            <Settings className="h-4 w-4" />
+            <span className="ml-0 hidden truncate group-hover/side:inline">Settings</span>
+          </Link>
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-0 rounded-none px-2 py-2 text-left text-[var(--muted)] transition group-hover/side:justify-start group-hover/side:gap-2 group-hover/side:px-3 hover:bg-slate-200/60"
+            onClick={requestSignOut}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="ml-0 hidden truncate group-hover/side:inline">Logout</span>
+          </button>
         </div>
       </aside>
       <main className="flex-1 bg-[var(--surface)] px-4 py-6 text-[var(--text)] sm:px-6 lg:px-10">
