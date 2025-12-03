@@ -589,52 +589,32 @@ export default function AgentManagementPage() {
               </div>
             </div>
           )}
-          <div className="grid gap-6 lg:grid-cols-3 lg:justify-center">
+          <div className="grid gap-4 lg:grid-cols-3 lg:justify-center">
             {agents.map((agent) => (
               <Card
                 key={agent.name}
-                className="space-y-4 w-full max-w-sm rounded-sm border border-slate-200/80 bg-white/80 p-6 text-slate-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)]"
+                className="space-y-3 w-full max-w-sm rounded-md border border-slate-200/80 bg-white/85 p-5 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)]"
               >
-                <h3 className="text-lg font-semibold">{agent.name}</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-lg font-semibold text-slate-900">{agent.name}</h3>
+                <p className="text-sm text-slate-600">Status: {agent.running ? "Running" : "Stopped"}</p>
+                <p className="text-sm text-slate-600">
                   Port: {agent.running && agent.port ? agent.port : "Agent Not Started"}
                 </p>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-600">
                   {agent.running ? "Started at" : "Stopped at"} {agent.lastActionTime}
                 </p>
-                <div className="flex gap-3">
+                {/* Start/Stop controls are intentionally hidden per UI request */}
+                <div className="pt-1">
                   <Button
+                    type="button"
                     variant="ghost"
-                    className={`flex items-center justify-center gap-2 rounded-sm px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-white transition-colors ${
-                      agent.running
-                        ? "bg-red-400 hover:bg-red-600 shadow-[0_10px_20px_rgba(244,67,54,0.25)]"
-                        : "bg-emerald-400 hover:bg-emerald-600 shadow-[0_10px_20px_rgba(16,185,129,0.35)]"
-                    }`}
-                    onClick={() => toggleAgent(agent.name, agent.running ? "stop" : "start")}
-                  >
-                    {agent.running ? (
-                      <>
-                        <Power className="h-4 w-4" />
-                        Stop
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4" />
-                        Start
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="rounded-sm bg-red-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white shadow-[0_10px_20px_rgba(244,67,54,0.25)]"
+                    className="rounded-sm bg-red-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white shadow-[0_10px_20px_rgba(244,67,54,0.25)] hover:bg-red-600"
                   >
                     Delete
                   </Button>
                 </div>
-                <div className="mt-2">
-                  <span className="text-xs uppercase tracking-[0.35em] text-slate-400">
-                    Type: {agent.type}
-                  </span>
+                <div className="mt-1 text-xs uppercase tracking-[0.3em] text-slate-500">
+                  Type: {agent.type || "Agent"}
                 </div>
               </Card>
             ))}
