@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { AGENT_ORG_KEY } from "@/config/agent";
 import { AGENT_API_BASE } from "@/config/api";
 import { formatCurrentTime, useAgents } from "@/lib/useAgents";
-import { Play, Power } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 
 const agentStatusVariant: Record<string, "success" | "warning"> = {
   healthy: "success",
@@ -77,6 +77,14 @@ export default function AgentManagementPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isValidatingName, setIsValidatingName] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredAgents = useMemo(
+    () =>
+      agents.filter((agent) =>
+        agent.name.toLowerCase().includes(searchTerm.trim().toLowerCase()),
+      ),
+    [agents, searchTerm],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -589,36 +597,86 @@ export default function AgentManagementPage() {
               </div>
             </div>
           )}
-          <div className="grid gap-4 lg:grid-cols-3 lg:justify-center">
-            {agents.map((agent) => (
-              <Card
-                key={agent.name}
-                className="space-y-3 w-full max-w-sm rounded-md border border-slate-200/80 bg-white/85 p-5 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)]"
-              >
-                <h3 className="text-lg font-semibold text-slate-900">{agent.name}</h3>
-                <p className="text-sm text-slate-600">Status: {agent.running ? "Running" : "Stopped"}</p>
-                <p className="text-sm text-slate-600">
-                  Port: {agent.running && agent.port ? agent.port : "Agent Not Started"}
-                </p>
-                <p className="text-sm text-slate-600">
-                  {agent.running ? "Started at" : "Stopped at"} {agent.lastActionTime}
-                </p>
-                {/* Start/Stop controls are intentionally hidden per UI request */}
-                <div className="pt-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="rounded-sm bg-red-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white shadow-[0_10px_20px_rgba(244,67,54,0.25)] hover:bg-red-600"
-                  >
-                    Delete
-                  </Button>
-                </div>
-                <div className="mt-1 text-xs uppercase tracking-[0.3em] text-slate-500">
-                  Type: {agent.type || "Agent"}
-                </div>
-              </Card>
-            ))}
+          <div className="flex justify-center">
+            <div className="relative w-full max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                className="w-full rounded-lg border border-slate-200/80 bg-white/80 px-9 py-2 text-sm text-slate-800 placeholder:text-slate-400 shadow-[0_6px_20px_rgba(15,23,42,0.05)] focus:border-slate-400 focus:outline-none"
+                placeholder="Search Agent"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
           </div>
+
+          <Card className="overflow-hidden border border-slate-200/80 bg-white/90 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)] mt-4">
+            <div className="overflow-x-auto">
+              <table className="min-w-[720px] w-full text-sm text-slate-800">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <th className="px-4 py-3 text-left">Name</th>
+                    <th className="px-4 py-3 text-center">Type</th>
+                    <th className="px-4 py-3 text-center">Last Modified</th>
+                    <th className="px-4 py-3 text-center">Port</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="px-4 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/80">
+                  {filteredAgents.map((agent) => {
+                    const statusLabel = agent.running ? "Running" : "Stopped";
+                    const portLabel = agent.running && agent.port ? agent.port : "Agent Not Started";
+                    return (
+                      <tr key={agent.name} className="bg-white/85 transition-colors hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700 uppercase">
+                              {agent.name.slice(0, 2)}
+                            </span>
+                            <span className="font-semibold text-slate-900">{agent.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center text-slate-700">{agent.type || "Agent"}</td>
+                        <td className="px-4 py-3 text-center text-slate-700">
+                          {agent.running ? "Started at " : "Stopped at "}
+                          {agent.lastActionTime}
+                        </td>
+                        <td className="px-4 py-3 text-center text-slate-700">{portLabel}</td>
+                        <td className="px-4 py-3 text-center text-slate-700">{statusLabel}</td>
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="inline-flex items-center gap-2 rounded-sm bg-red-500 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white shadow-[0_6px_14px_rgba(244,67,54,0.25)] hover:bg-red-600"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V5a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m-3 0h12" />
+                            </svg>
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredAgents.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                        No agents match your search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </section>
         {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4">
