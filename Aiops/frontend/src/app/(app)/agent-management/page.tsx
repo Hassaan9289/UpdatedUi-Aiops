@@ -175,13 +175,27 @@ export default function AgentManagementPage() {
     }
     setErrorMessage(null);
     setIsSubmitting(true);
+    const credentialsPayload = {
+      schema: credentialFields.map((field) => ({
+        field: field.field,
+        type: field.type,
+        label: field.label,
+        value: credentials[field.field] ?? "",
+      })),
+    };
+    const actionsPayload = {
+      actions: selectedActions.map((action) => ({
+        action_code: action.action_code,
+        action_name: action.action_name,
+      })),
+    };
     const payload = {
       orgKey: AGENT_ORG_KEY,
       agentName: newAgentName.trim(),
       agentType: selectedAgentType.code,
       subType: enterprise,
-      credentials,
-      actions: selectedActions.map((action) => action.action_code),
+      credentials: credentialsPayload,
+      actions: actionsPayload,
     };
     console.log("Create agent request", payload);
     try {
