@@ -90,6 +90,7 @@ export default function AgentManagementPage() {
       ),
     [agents, searchTerm],
   );
+  const [actionError, setActionError] = useState<string | null>(null);
   const sortedAgents = useMemo(() => {
     const copy = [...filteredAgents];
     const directionFactor = sortDirection === "asc" ? 1 : -1;
@@ -189,6 +190,11 @@ export default function AgentManagementPage() {
         action_name: action.action_name,
       })),
     };
+    if (!actionsPayload.actions.length) {
+      setActionError("Select at least one action");
+      setIsSubmitting(false);
+      return;
+    }
     const payload = {
       orgKey: AGENT_ORG_KEY,
       agentName: newAgentName.trim(),
@@ -237,6 +243,7 @@ export default function AgentManagementPage() {
       setSelectedActions([]);
       setAvailableSelection([]);
       setSelectedSelection([]);
+      setActionError(null);
       setCredentialFields([]);
       setCredentials({});
       setLlmModel(llmOptions[0]);
@@ -1083,6 +1090,19 @@ export default function AgentManagementPage() {
                     <p className="rounded-xl border border-rose-200/60 bg-rose-50/60 px-4 py-2 text-xs uppercase tracking-[0.3em] text-rose-600">
                       {errorMessage}
                     </p>
+                  )}
+                  {actionError && (
+                    <div className="flex items-center justify-between rounded-xl border border-rose-200/60 bg-rose-50/60 px-4 py-2 text-xs uppercase tracking-[0.3em] text-rose-600">
+                      <span>{actionError}</span>
+                      <button
+                        type="button"
+                        className="text-rose-600 transition hover:text-rose-800"
+                        onClick={() => setActionError(null)}
+                        aria-label="Dismiss action error"
+                      >
+                        ×
+                      </button>
+                    </div>
                   )}
                   </div>
                 </div>
