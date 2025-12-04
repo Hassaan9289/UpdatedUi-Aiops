@@ -777,11 +777,12 @@ export default function AgentManagementPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-3">
                             <button
                               type="button"
                               className="inline-flex h-9 items-center justify-center rounded-md bg-slate-100 px-3 text-slate-700 shadow-sm transition hover:bg-slate-200"
                               aria-label={`Edit ${agent.name}`}
+                              title="Edit"
                             >
                               <Settings className="h-4 w-4" />
                             </button>
@@ -789,6 +790,7 @@ export default function AgentManagementPage() {
                               type="button"
                               className="inline-flex h-9 items-center justify-center rounded-md bg-red-500 px-3 text-white shadow-[0_6px_14px_rgba(244,67,54,0.25)] transition hover:bg-red-600"
                               aria-label={`Delete ${agent.name}`}
+                              title="Delete"
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
