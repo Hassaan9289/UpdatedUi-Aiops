@@ -894,7 +894,7 @@ export default function AgentManagementPage() {
                   Close
                 </button>
               </div>
-              <Card className="mt-6 rounded-[26px] border border-slate-200/80 bg-slate-100 p-6 shadow-[0_20px_40px_rgba(15,23,42,0.15)] max-h-[calc(100vh-8rem)] overflow-hidden">
+              <Card className="mt-6 rounded-[26px] border border-slate-200/80 bg-slate-100 p-6 shadow-[0_20px_40px_rgba(15,23,42,0.15)] max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <div className="flex h-full flex-col space-y-6">
                   <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-transparent">
                     <div className="space-y-1">
