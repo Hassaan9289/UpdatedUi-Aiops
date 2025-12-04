@@ -479,6 +479,11 @@ export default function DashboardPage() {
     }
   };
   const requestToggle = (name: string, action: 'start' | 'stop') => setConfirm({ name, action });
+  const [showAllAgents, setShowAllAgents] = useState(false);
+  const visibleAgents = useMemo(
+    () => (showAllAgents ? agents : agents.slice(0, Math.min(agents.length, 6))),
+    [agents, showAllAgents],
+  );
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -601,7 +606,7 @@ export default function DashboardPage() {
               <p className="text-sm text-white/60">Start/stop live actions and inspect recent activity.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {agents.map((agent) => (
+              {visibleAgents.map((agent) => (
                 <Card key={agent.name} className="space-y-3 border-white/10 bg-white/5 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] transition hover:border-white/20 hover:bg-white/10">
                   <div className="flex items-center justify-between">
                     <div>
@@ -652,6 +657,27 @@ export default function DashboardPage() {
                 </Card>
               ))}
             </div>
+            {agents.length > 6 && (
+              <div className="flex justify-center">
+                {!showAllAgents ? (
+                  <Button
+                    variant="outline"
+                    className="mt-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => setShowAllAgents(true)}
+                  >
+                    See more agents
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="mt-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => setShowAllAgents(false)}
+                  >
+                    See less agents
+                  </Button>
+                )}
+              </div>
+            )}
 
             {selectedAgent && (
               <Card className="space-y-4 p-4">
