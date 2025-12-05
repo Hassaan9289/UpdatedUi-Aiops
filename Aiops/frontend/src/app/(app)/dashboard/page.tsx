@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { HealthPill } from "@/components/ui/HealthPill";
 import { MiniList } from "@/components/ui/MiniList";
-import ClosedIncidentDrawer from "@/components/incidents/ClosedIncidentDrawer";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { RequireRole } from "@/components/auth/RequireRole";
 import topAnimation from "../../../../Guy talking to Robot _ AI Help.json";
@@ -17,6 +16,7 @@ import { useSessionStore } from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 import { useLottieLoader } from "@/lib/useLottieLoader";
 import { AGENT_HELLO_HOST } from "@/config/api";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type BackendIncident = {
   sys_id?: string;
@@ -49,6 +49,106 @@ const LoadingSpinner = () => (
   </div>
 );
 
+function formatKey(key: string) {
+  return key
+    .replace(/^u_/i, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function isProbablyDateString(s: string) {
+  if (!s) return false;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return !isNaN(Date.parse(s));
+  return false;
+}
+
+function isURL(s: string) {
+  return /^https?:\/\//i.test(s);
+}
+
+function IncidentValue({ value }: { value: unknown }) {
+  if (value === null || value === undefined || value === "") {
+    return <span className="text-white/50">—</span>;
+  }
+
+  if (typeof value === "string") {
+    if (isURL(value)) {
+      return (
+        <a
+          href={value}
+          target="_blank"
+          rel="noreferrer"
+          className="text-emerald-300 underline decoration-emerald-400/50 underline-offset-2"
+        >
+          {value}
+        </a>
+      );
+    }
+    if (isProbablyDateString(value)) {
+      return <span>{new Date(value).toLocaleString()}</span>;
+    }
+    return <span className="text-white/90">{value}</span>;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return <span className="text-white/90">{String(value)}</span>;
+  }
+
+  if (Array.isArray(value)) {
+    const allPrimitive = value.every((v) => v === null || ["string", "number", "boolean"].includes(typeof v));
+    if (allPrimitive) {
+      return <span className="text-white/90">{value.map((v) => String(v ?? "—")).join(", ")}</span>;
+    }
+    return (
+      <div className="space-y-2">
+        {value.map((item, idx) => (
+          <div key={idx} className="rounded-lg border border-white/10 bg-white/5 p-2">
+            <IncidentValue value={item} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (("display_value" in obj && (obj as any).display_value) || ("value" in obj && "link" in obj)) {
+      const display = (obj as any).display_value ?? (obj as any).value;
+      const link = (obj as any).link as string | undefined;
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-white/90">{String(display)}</span>
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-200 hover:bg-emerald-500/20"
+            >
+              View
+            </a>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-2">
+        {Object.keys(obj).map((k) => (
+          <div key={k} className="grid grid-cols-3 gap-2">
+            <div className="col-span-1 text-xs uppercase tracking-wide text-white/50">{formatKey(k)}</div>
+            <div className="col-span-2 text-sm text-white/90">
+              <IncidentValue value={obj[k]} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <span className="text-white/90">{String(value)}</span>;
+}
+
 export default function DashboardPage() {
   const user = useSessionStore((s) => s.user);
   const services = useAIOpsStore((state) => state.services);
@@ -60,7 +160,7 @@ export default function DashboardPage() {
   const [backendData, setBackendData] = useState<BackendResponse | null>(null);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [backendLoading, setBackendLoading] = useState(false);
-  const [selectedClosedIncident, setSelectedClosedIncident] = useState<BackendIncident | null>(null);
+  const [selectedClosedIncidentId, setSelectedClosedIncidentId] = useState<string | null>(null);
   const animRef = useRef<HTMLDivElement | null>(null);
   const lottieReady = useLottieLoader();
   const [typed, setTyped] = useState("");
@@ -491,6 +591,10 @@ export default function DashboardPage() {
   };
 
   const resolvedCount = backendData?.totalIncidents ?? 0;
+  const incidentKey = useCallback(
+    (incident: BackendIncident, index?: number) => incident.sys_id ?? incident.number ?? `idx-${index ?? 0}`,
+    [],
+  );
   const recentClosed = useMemo(() => {
     if (!backendData) {
       return [];
@@ -502,6 +606,21 @@ export default function DashboardPage() {
       )
       .slice(0, 5);
   }, [backendData]);
+  const selectedClosedIncident = useMemo(() => {
+    return (
+      recentClosed.find((incident, idx) => incidentKey(incident, idx) === selectedClosedIncidentId) ?? null
+    );
+  }, [incidentKey, recentClosed, selectedClosedIncidentId]);
+  useEffect(() => {
+    if (recentClosed.length === 0) {
+      setSelectedClosedIncidentId(null);
+      return;
+    }
+    const stillExists = recentClosed.some((incident, idx) => incidentKey(incident, idx) === selectedClosedIncidentId);
+    if (!stillExists) {
+      setSelectedClosedIncidentId(incidentKey(recentClosed[0], 0));
+    }
+  }, [incidentKey, recentClosed, selectedClosedIncidentId]);
   const activeDisplayValue = backendLoading ? <LoadingSpinner /> : (
     backendData?.activeCount ?? metrics.incidents
   ).toString();
@@ -825,11 +944,12 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <section id="recent-incidents" className="grid gap-6">
+          <section id="recent-incidents" className="grid gap-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:col-span-2">
+              <p className="section-title">Recent closed incidents</p>
+            </div>
+
             <Card className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="section-title">Recent closed incidents</p>
-              </div>
               <div className="min-h-[180px] space-y-3">
                 {backendLoading && <p className="text-sm text-white/70">Loading incidents…</p>}
                 {backendError && <p className="text-sm text-rose-400">{backendError}</p>}
@@ -838,37 +958,100 @@ export default function DashboardPage() {
                     {recentClosed.length === 0 && (
                       <p className="text-sm text-white/60">No closed incidents available.</p>
                     )}
-                    {recentClosed.map((incident, index) => (
-                      <button
-                        key={incident.sys_id ?? incident.number ?? index}
-                        type="button"
-                        onClick={() => setSelectedClosedIncident(incident)}
-                        className="flex w-full flex-col gap-1 rounded-lg border border-white/5 bg-white/5 p-3 text-left text-sm transition hover:border-white/20 hover:bg-white/10"
-                      >
-                        <div className="flex items-baseline justify-between gap-3">
-                          <p className="font-semibold">{incident.number ?? 'Unknown'}</p>
-                          <p className="text-xs text-white/60">
-                            {incident.closed_at
-                              ? new Date(incident.closed_at).toLocaleString()
-                              : 'Closed date unknown'}
+                    {recentClosed.map((incident, index) => {
+                      const key = incidentKey(incident, index);
+                      const isSelected = selectedClosedIncidentId === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSelectedClosedIncidentId(key)}
+                          className={`flex w-full flex-col gap-1 rounded-lg border border-white/5 bg-white/5 p-3 text-left text-sm transition hover:border-white/20 hover:bg-white/10 ${
+                            isSelected ? "border-white/30 bg-white/10" : ""
+                          }`}
+                        >
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="font-semibold">{incident.number ?? "Unknown"}</p>
+                            <p className="text-xs text-white/60">
+                              {incident.closed_at ? new Date(incident.closed_at).toLocaleString() : "Closed date unknown"}
+                            </p>
+                          </div>
+                          <p className="text-white/70">{incident.short_description ?? "No description"}</p>
+                          <p className="text-xs text-white/50">
+                            {(incident.close_notes && String(incident.close_notes)) || "Closed by AI agent"} • Notify:{" "}
+                            {incident.notify ?? "n/a"}
                           </p>
-                        </div>
-                        <p className="text-white/70">{incident.short_description ?? 'No description'}</p>
-                        <p className="text-xs text-white/50">
-                          {(incident.close_notes && String(incident.close_notes)) || 'Closed by AI agent'} • Notify: {incident.notify ?? 'n/a'}
-                        </p>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </>
                 )}
               </div>
             </Card>
-            {selectedClosedIncident && (
-              <ClosedIncidentDrawer
-                incident={selectedClosedIncident}
-                onClose={() => setSelectedClosedIncident(null)}
-              />
-            )}
+
+            <Card className="flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <p className="section-title">Incident details</p>
+                {selectedClosedIncident?.closed_at && (
+                  <p className="text-xs text-white/60">{new Date(selectedClosedIncident.closed_at).toLocaleString()}</p>
+                )}
+              </div>
+              <div className="min-h-[180px] flex-1">
+                {!selectedClosedIncident ? (
+                  <p className="text-sm text-white/60">Click on an incident to see its details.</p>
+                ) : (
+                  <ScrollArea className="h-[520px] lg:h-[460px] pr-3">
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-base font-semibold text-white">
+                          {selectedClosedIncident.number ?? "Unknown incident"}
+                        </p>
+                        <p className="text-sm text-white/70">
+                          {selectedClosedIncident.short_description ?? "No description provided."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 rounded-2xl border border-white/5 bg-white/5 p-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60">Incident fields</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                          {(() => {
+                            const preferredOrder = [
+                              "number",
+                              "short_description",
+                              "state",
+                              "category",
+                              "u_ai_category",
+                              "closed_at",
+                              "close_notes",
+                              "notify",
+                              "sys_id",
+                            ];
+                            const keys = Object.keys(selectedClosedIncident);
+                            const orderedKeys = [
+                              ...preferredOrder.filter((k) => keys.includes(k)),
+                              ...keys.filter((k) => !preferredOrder.includes(k)),
+                            ];
+                            return orderedKeys.map((key) => (
+                              <div
+                                key={key}
+                                className="grid grid-cols-3 gap-2 rounded-xl border border-white/5 bg-transparent p-2"
+                              >
+                                <div className="col-span-1 text-xs font-semibold uppercase tracking-wide text-white/60">
+                                  {formatKey(key)}
+                                </div>
+                                <div className="col-span-2 whitespace-pre-wrap break-words text-sm text-white/90">
+                                  <IncidentValue value={(selectedClosedIncident as any)[key]} />
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </Card>
           </section>
         </div>
       </RequireRole>
