@@ -606,56 +606,60 @@ export default function DashboardPage() {
               <p className="text-sm text-white/60">Start/stop live actions and inspect recent activity.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {visibleAgents.map((agent) => (
-                <Card key={agent.name} className="space-y-3 border-white/10 bg-white/5 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] transition hover:border-white/20 hover:bg-white/10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-semibold tracking-tight">{agent.name}</p>
-                      <p className="text-xs text-white/60">
-                        Port: {agent.running && agent.port ? agent.port : "Agent Not Started"} -{" "}
-                        {agent.version ?? agent.type}
-                      </p>
+              {visibleAgents.length === 0 ? (
+                <p className="col-span-full text-center text-sm text-white/70">No agents to display.</p>
+              ) : (
+                visibleAgents.map((agent) => (
+                  <Card key={agent.name} className="space-y-3 border-white/10 bg-white/5 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] transition hover:border-white/20 hover:bg-white/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-semibold tracking-tight">{agent.name}</p>
+                        <p className="text-xs text-white/60">
+                          Port: {agent.running && agent.port ? agent.port : "Agent Not Started"} -{" "}
+                          {agent.version ?? agent.type}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-white/70">Real-time: {agent.running ? 'Running' : 'Stopped'}</p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500/85 disabled:opacity-50"
-                        onClick={() => requestToggle(agent.name, 'start')}
-                        disabled={agent.running}
-                      >
-                        <Play className="mr-1 h-4 w-4" /> Start
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-rose-500 bg-rose-500 text-white hover:bg-rose-500/85 disabled:opacity-50"
-                        onClick={() => requestToggle(agent.name, 'stop')}
-                        disabled={!agent.running}
-                      >
-                        <Pause className="mr-1 h-4 w-4" /> Stop
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={!agent.running}
-                        onClick={() => agent.running && setChatAgent(agent)}
-                        className={`flex items-center gap-1 rounded-full border ${
-                          agent.running
-                            ? 'border-emerald-400 bg-emerald-500/10 text-white hover:bg-emerald-500/20'
-                            : 'border-white/20 bg-white/10 text-white/40'
-                        }`}
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        Chat
-                      </Button>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-white/70">Real-time: {agent.running ? 'Running' : 'Stopped'}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500/85 disabled:opacity-50"
+                          onClick={() => requestToggle(agent.name, 'start')}
+                          disabled={agent.running}
+                        >
+                          <Play className="mr-1 h-4 w-4" /> Start
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-rose-500 bg-rose-500 text-white hover:bg-rose-500/85 disabled:opacity-50"
+                          onClick={() => requestToggle(agent.name, 'stop')}
+                          disabled={!agent.running}
+                        >
+                          <Pause className="mr-1 h-4 w-4" /> Stop
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={!agent.running}
+                          onClick={() => agent.running && setChatAgent(agent)}
+                          className={`flex items-center gap-1 rounded-full border ${
+                            agent.running
+                              ? 'border-emerald-400 bg-emerald-500/10 text-white hover:bg-emerald-500/20'
+                              : 'border-white/20 bg-white/10 text-white/40'
+                          }`}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          Chat
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))
+              )}
             </div>
             {agents.length > 6 && (
               <div className="flex justify-center">
