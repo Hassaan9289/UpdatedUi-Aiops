@@ -511,29 +511,59 @@ export default function DashboardPage() {
     <AuthGate>
       <RequireRole roles={["admin", "operator", "executive", "observer"]}>
         <div className="space-y-6" id="top">
-          {/* Top banner takes 1/3 of the viewport height */}
-          <section className="relative h-[33vh] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]/70">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(124,58,237,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(79,70,229,0.1),transparent_50%),radial-gradient(circle_at_50%_80%,rgba(56,189,248,0.1),transparent_55%)]" />
-            <div className="relative z-10 flex h-full w-full items-center justify-between gap-6 px-6">
-              <div className="max-w-2xl text-left">
-                <p className="text-xl font-medium text-[var(--muted)]">&nbsp;</p>
-                <h2 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--text)]">
-                  {typed}
-                  <span className="ml-0.5 inline-block h-[1.15em] w-[2px] translate-y-[-3px] bg-[var(--text)] align-middle animate-pulse" />
-                </h2>
-                <p className="mt-2 text-sm text-[var(--muted)]">Your AI control plane is online.</p>
+          {/* Profile header */}
+          <section className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="grid h-20 w-20 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-700 shadow-inner">
+                <User className="h-10 w-10" />
+              </span>
+              <div className="flex-1 min-w-[240px] space-y-2">
+                <h2 className="text-2xl font-semibold text-slate-900">{user?.name ?? "Mr. Gregore Joy"}</h2>
+                <div className="flex flex-wrap items-center gap-6 text-sm text-slate-600">
+                  <span>
+                    Role: <span className="font-medium text-slate-800 capitalize">{user?.role ?? "N/A"}</span>
+                  </span>
+                  <span>
+                    Email:{" "}
+                    <a className="font-medium text-indigo-600 hover:underline" href={`mailto:${user?.email ?? ""}`}>
+                      {user?.email ?? "johnhonai@testing.com"}
+                    </a>
+                  </span>
+                </div>
               </div>
-              <div className="flex h-full flex-1 items-center justify-end">
-                <div ref={animRef} className="h-full w-full max-w-[720px]" />
+            </div>
+            <div className="mt-6 grid gap-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] items-center">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-600">Profile Completion: 75%</p>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((bar) => (
+                    <span
+                      key={bar}
+                      className={`h-2 w-16 rounded-full ${bar <= 4 ? "bg-teal-400" : "bg-slate-200"}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-semibold text-slate-900">50</p>
+                <p className="text-sm text-slate-600">Completed Trips</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-semibold text-slate-900">08</p>
+                <p className="text-sm text-slate-600">Upcoming Trips</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-semibold text-slate-900">10</p>
+                <p className="text-sm text-slate-600">Cancelled Trips</p>
               </div>
             </div>
           </section>
 
           {/* In-page navigation */}
-          <nav className="mt-2 flex w-full flex-wrap gap-2 rounded-xl border border-[var(--border)] bg-[var(--card-muted)] p-2">
-            <Button variant="muted" onClick={() => scrollTo("top")}>Overview</Button>
-            <Button variant="muted" onClick={() => scrollTo("agents")}>Agent management</Button>
-            <Button variant="muted" onClick={() => scrollTo("recent-incidents")}>Recent incidents</Button>
+          <nav className="mt-2 flex w-full flex-wrap gap-2 rounded-xl border border-slate-800 bg-slate-900/90 p-2 shadow-[0_12px_30px_rgba(15,23,42,0.25)]">
+            <Button variant="muted" className="bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-700" onClick={() => scrollTo("top")}>Overview</Button>
+            <Button variant="muted" className="bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-700" onClick={() => scrollTo("agents")}>Agent management</Button>
+            <Button variant="muted" className="bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-700" onClick={() => scrollTo("recent-incidents")}>Recent incidents</Button>
           </nav>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

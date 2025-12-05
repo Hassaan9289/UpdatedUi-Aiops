@@ -176,12 +176,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 bg-[var(--surface)] px-4 py-6 text-[var(--text)] sm:px-6 lg:px-10">
-        <header className="relative flex items-center justify-between gap-4 border-b border-[var(--border)] pb-6">
+        <header className="relative mb-4 flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-slate-100 px-5 py-3 text-[var(--text)] shadow-sm">
           <div className="flex items-center gap-3">
             <Link to="/dashboard" aria-label="Royal Cyber home" className="block">
               <BrandMark />
             </Link>
-            <p className="hidden text-xs text-[var(--muted)] sm:block">Royal Cyber AIOps for Enterprise</p>
+            <p className="hidden text-sm text-[var(--text)] sm:block">Royal Cyber AIOps for Enterprise</p>
           </div>
 
           <h1 className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-semibold text-[var(--text)]">
@@ -202,19 +202,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
             <Link to="/account">
-              <Button variant="muted" className="flex items-center gap-2 px-4 py-2 text-sm rounded-full">
+              <Button variant="muted" className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--card-muted)]">
                 <UserCircle2 className="h-4 w-4" />
                 Profile
               </Button>
             </Link>
             <Button
               variant="destructive"
-              className="px-4 py-2 text-sm rounded-full flex items-center gap-2"
-              style={{
-                backgroundImage: "none",
-                backgroundColor: "#dc2626",
-                boxShadow: "0 8px 20px rgba(220, 38, 38, 0.35)",
-              }}
+              className="flex items-center gap-2 rounded-full px-5 py-2 text-sm shadow-[0_6px_14px_rgba(244,63,94,0.25)]"
               onClick={requestSignOut}
             >
               Sign out
