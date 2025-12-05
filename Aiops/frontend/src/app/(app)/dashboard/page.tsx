@@ -750,9 +750,15 @@ export default function DashboardPage() {
 
           {/* Agent Management Section */}
           <section id="agents" className="grid gap-6">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="section-title">Agent management</p>
-              <p className="text-sm text-white/60">Start/stop live actions and inspect recent activity.</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
+                <p className="section-title whitespace-nowrap px-3">Agent management</p>
+                <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
+              </div>
+              <p className="text-sm text-white/60 text-center sm:text-right">
+                Start/stop live actions and inspect recent activity.
+              </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {visibleAgents.length === 0 ? (
@@ -945,8 +951,10 @@ export default function DashboardPage() {
           )}
 
           <section id="recent-incidents" className="grid gap-4 lg:grid-cols-2">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:col-span-2">
-              <p className="section-title">Recent closed incidents</p>
+            <div className="flex items-center gap-3 lg:col-span-2">
+              <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
+              <p className="section-title whitespace-nowrap px-3">Recent closed incidents</p>
+              <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
             </div>
 
             <Card className="space-y-4">
@@ -966,18 +974,24 @@ export default function DashboardPage() {
                           key={key}
                           type="button"
                           onClick={() => setSelectedClosedIncidentId(key)}
-                          className={`flex w-full flex-col gap-1 rounded-lg border border-white/5 bg-white/5 p-3 text-left text-sm transition hover:border-white/20 hover:bg-white/10 ${
-                            isSelected ? "border-white/30 bg-white/10" : ""
+                          className={`flex w-full flex-col gap-1 rounded-lg border p-3 text-left text-sm transition ${
+                            isSelected
+                              ? "border-slate-300 bg-slate-200 text-slate-900 shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
+                              : "border-transparent bg-white/5 text-white hover:bg-white/12"
                           }`}
                         >
                           <div className="flex items-baseline justify-between gap-3">
-                            <p className="font-semibold">{incident.number ?? "Unknown"}</p>
-                            <p className="text-xs text-white/60">
+                            <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
+                              {incident.number ?? "Unknown"}
+                            </p>
+                            <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/60"}`}>
                               {incident.closed_at ? new Date(incident.closed_at).toLocaleString() : "Closed date unknown"}
                             </p>
                           </div>
-                          <p className="text-white/70">{incident.short_description ?? "No description"}</p>
-                          <p className="text-xs text-white/50">
+                          <p className={isSelected ? "text-slate-800" : "text-white/70"}>
+                            {incident.short_description ?? "No description"}
+                          </p>
+                          <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/50"}`}>
                             {(incident.close_notes && String(incident.close_notes)) || "Closed by AI agent"} • Notify:{" "}
                             {incident.notify ?? "n/a"}
                           </p>
