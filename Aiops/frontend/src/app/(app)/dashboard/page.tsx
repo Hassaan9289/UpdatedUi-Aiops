@@ -561,9 +561,9 @@ export default function DashboardPage() {
 
           {/* In-page navigation */}
           <nav className="mt-2 flex w-full flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-            <Button variant="muted" className="bg-emerald-500 text-white hover:bg-emerald-600 border-none" onClick={() => scrollTo("top")}>Overview</Button>
-            <Button variant="muted" className="bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200" onClick={() => scrollTo("agents")}>Agent management</Button>
-            <Button variant="muted" className="bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200" onClick={() => scrollTo("recent-incidents")}>Recent incidents</Button>
+            <Button variant="muted" className="rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 border-none" onClick={() => scrollTo("top")}>Overview</Button>
+            <Button variant="muted" className="rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200" onClick={() => scrollTo("agents")}>Agent management</Button>
+            <Button variant="muted" className="rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200" onClick={() => scrollTo("recent-incidents")}>Recent incidents</Button>
           </nav>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
