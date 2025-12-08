@@ -8,9 +8,8 @@ import { Input } from "@/components/ui/input";
 import { AGENT_ORG_KEY } from "@/config/agent";
 import { AGENT_API_BASE } from "@/config/api";
 import { formatCurrentTime, useAgents } from "@/lib/useAgents";
+import { Search, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
-import { Settings } from "lucide-react";
 
 const agentStatusVariant: Record<string, "success" | "warning"> = {
   healthy: "success",
@@ -94,9 +93,17 @@ export default function AgentManagementPage() {
   const onlineAgents = useMemo(() => agents.filter((a) => a.running).length, [agents]);
   const offlineAgents = Math.max(0, totalAgents - onlineAgents);
   const agentPieGradient = useMemo(() => {
-    if (!totalAgents) return "conic-gradient(#cbd5e1 0% 100%)";
+    const onlineColor = "#34d399";
+    const offlineColor = "#d1d5db";
+    if (!totalAgents) return `conic-gradient(${offlineColor} 0% 100%)`;
     const onlinePercent = Math.round((onlineAgents / totalAgents) * 100);
-    return `conic-gradient(#34d399 0% ${onlinePercent}%, #fca5a5 ${onlinePercent}% 100%)`;
+    if (onlinePercent <= 0) {
+      return `conic-gradient(${offlineColor} 0% 100%)`;
+    }
+    if (onlinePercent >= 100) {
+      return `conic-gradient(${onlineColor} 0% 100%)`;
+    }
+    return `conic-gradient(${onlineColor} 0% ${onlinePercent}%, ${offlineColor} ${onlinePercent}% 100%)`;
   }, [onlineAgents, totalAgents]);
   const [actionError, setActionError] = useState<string | null>(null);
   const sortedAgents = useMemo(() => {
@@ -708,9 +715,7 @@ export default function AgentManagementPage() {
                     style={{ backgroundImage: agentPieGradient }}
                     aria-hidden="true"
                   />
-                  <div className="absolute inset-2 grid place-items-center rounded-full bg-slate-950/80 text-sm font-semibold">
-                    <span>{totalAgents || "0"}</span>
-                  </div>
+                  
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -720,9 +725,9 @@ export default function AgentManagementPage() {
                   <span className="ml-auto font-semibold text-emerald-200">{onlineAgents}</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-300" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
                   <span className="text-white/80">Offline</span>
-                  <span className="ml-auto font-semibold text-rose-200">{offlineAgents}</span>
+                  <span className="ml-auto font-semibold text-slate-200">{offlineAgents}</span>
                 </div>
               </div>
             </Card>
