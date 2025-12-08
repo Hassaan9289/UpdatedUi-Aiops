@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 bg-[var(--surface)] px-4 py-6 text-[var(--text)] sm:px-6 lg:px-10">
-        <header className="relative mb-4 flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-slate-100 px-5 py-3 text-[var(--text)] shadow-sm">
+        <header className="relative mb-4 flex items-center justify-between gap-4 rounded-xl bg-white px-5 py-3 text-[var(--text)] shadow-sm">
           <div className="flex items-center gap-3">
             <Link to="/dashboard" aria-label="Royal Cyber home" className="block">
               <BrandMark />

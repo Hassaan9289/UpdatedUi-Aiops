@@ -631,7 +631,7 @@ export default function DashboardPage() {
       <RequireRole roles={["admin", "operator", "executive", "observer"]}>
         <div className="space-y-6" id="top">
           {/* Profile header */}
-          <section className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+          <section className="rounded-xl bg-transparent p-6 shadow-none">
             <div className="flex flex-wrap items-center gap-4">
               <span className="grid h-20 w-20 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-700 shadow-inner">
                 <User className="h-10 w-10" />

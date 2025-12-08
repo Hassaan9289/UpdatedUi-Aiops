@@ -90,6 +90,14 @@ export default function AgentManagementPage() {
       ),
     [agents, searchTerm],
   );
+  const totalAgents = agents.length;
+  const onlineAgents = useMemo(() => agents.filter((a) => a.running).length, [agents]);
+  const offlineAgents = Math.max(0, totalAgents - onlineAgents);
+  const agentPieGradient = useMemo(() => {
+    if (!totalAgents) return "conic-gradient(#cbd5e1 0% 100%)";
+    const onlinePercent = Math.round((onlineAgents / totalAgents) * 100);
+    return `conic-gradient(#34d399 0% ${onlinePercent}%, #fca5a5 ${onlinePercent}% 100%)`;
+  }, [onlineAgents, totalAgents]);
   const [actionError, setActionError] = useState<string | null>(null);
   const sortedAgents = useMemo(() => {
     const copy = [...filteredAgents];
@@ -675,30 +683,48 @@ export default function AgentManagementPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
               <p className="text-xs uppercase tracking-[0.3em] text-white/70">Total agents</p>
-              <p className="text-2xl font-semibold">{agents.length}</p>
+              <p className="text-2xl font-semibold">{totalAgents}</p>
               <p className="text-xs text-emerald-200">+2 new this week</p>
             </Card>
             <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
               <p className="text-xs uppercase tracking-[0.3em] text-white/70">Online</p>
-              <p className="text-2xl font-semibold">{agents.filter((a) => a.running).length}</p>
+              <p className="text-2xl font-semibold">{onlineAgents}</p>
               <p className="text-xs text-emerald-200">All healthy</p>
             </Card>
             <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
               <p className="text-xs uppercase tracking-[0.3em] text-white/70">Offline</p>
-              <p className="text-2xl font-semibold">{agents.filter((a) => !a.running).length}</p>
+              <p className="text-2xl font-semibold">{offlineAgents}</p>
               <p className="text-xs text-rose-200">Review connectivity</p>
             </Card>
-            <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Avg. start port</p>
-              <p className="text-2xl font-semibold">
-                {(() => {
-                  const ports = agents.filter((a) => a.running && a.port).map((a) => a.port as number);
-                  if (!ports.length) return "—";
-                  const avg = Math.round(ports.reduce((s, p) => s + p, 0) / ports.length);
-                  return avg;
-                })()}
-              </p>
-              <p className="text-xs text-white/70">Sample static metric</p>
+            <Card className="flex flex-col gap-3 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/70">Agent mix</p>
+                  <p className="text-lg font-semibold">{totalAgents} total</p>
+                </div>
+                <div className="relative h-20 w-20">
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{ backgroundImage: agentPieGradient }}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute inset-2 grid place-items-center rounded-full bg-slate-950/80 text-sm font-semibold">
+                    <span>{totalAgents || "0"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                  <span className="text-white/80">Online</span>
+                  <span className="ml-auto font-semibold text-emerald-200">{onlineAgents}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-300" />
+                  <span className="text-white/80">Offline</span>
+                  <span className="ml-auto font-semibold text-rose-200">{offlineAgents}</span>
+                </div>
+              </div>
             </Card>
           </div>
           {successMessage && successActive && (
