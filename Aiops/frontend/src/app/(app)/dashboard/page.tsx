@@ -965,16 +965,33 @@ export default function DashboardPage() {
                         if (!logoUrl) {
                           return <div className="h-10 w-10" aria-hidden="true" />;
                         }
+                        const baseImg = (
+                          <img
+                            src={logoUrl}
+                            alt={`${agent.enterprise ?? "Enterprise"} logo`}
+                            className={`object-contain ${isServiceNow ? "h-10 w-24" : "h-10 w-10"}`}
+                          />
+                        );
+                        const isIbm = enterpriseKey.includes("ibm");
+                        if (isMule) {
+                          return (
+                            <div className="relative h-8 w-8 overflow-hidden rounded-full" aria-label={`${agent.enterprise ?? "Enterprise"} logo`}>
+                              <div className="absolute inset-0 scale-125">{baseImg}</div>
+                            </div>
+                          );
+                        }
+                        if (isIbm) {
+                          return baseImg;
+                        }
+                        if (isServiceNow) {
+                          return baseImg;
+                        }
                         return (
                           <div
-                            className={`rounded-full bg-white/80 p-1 shadow-sm ${isMule ? "ring-2 ring-sky-200" : ""}`}
+                            className="rounded-full bg-white/80 p-1 shadow-sm"
                             aria-label={`${agent.enterprise ?? "Enterprise"} logo`}
                           >
-                            <img
-                              src={logoUrl}
-                              alt={`${agent.enterprise ?? "Enterprise"} logo`}
-                              className={`object-contain ${isServiceNow ? "h-10 w-24" : "h-10 w-10"}`}
-                            />
+                            {baseImg}
                           </div>
                         );
                       })()}

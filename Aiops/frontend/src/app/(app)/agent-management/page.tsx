@@ -722,14 +722,19 @@ export default function AgentManagementPage() {
                   <p className="text-xs uppercase tracking-[0.3em] text-white/70">Agent mix</p>
                   <p className="text-lg font-semibold">{totalAgents} total</p>
                 </div>
-                <div className="relative h-20 w-20">
-                  <div
-                    className="absolute inset-0 rounded-full"
-                    style={{ backgroundImage: agentPieGradient }}
-                    aria-hidden="true"
-                  />
-                  
-                </div>
+                {totalAgents > 0 ? (
+                  <div className="relative h-20 w-20">
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{ backgroundImage: agentPieGradient }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-20 w-24 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white/70">
+                    No agents
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1">
@@ -1043,71 +1048,73 @@ export default function AgentManagementPage() {
                       </label>
                     </div>
                   )}
-                  {wizardStep === 3 && (availableActions.length > 0 || selectedActions.length > 0) && (
+                  {wizardStep === 3 && (availableActions.length > 0 || selectedActions.length > 0 || credentialFields.length > 0) && (
                     <div className="space-y-5">
-                      <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-4 text-sm text-slate-800 shadow-inner">
-                        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Available actions</p>
-                        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
-                          <div className="space-y-2">
-                            <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Available values</p>
-                            <select
-                              multiple
-                              size={5}
-                              value={availableSelection}
-                              onChange={(event) =>
-                                setAvailableSelection(
-                                  Array.from(event.target.selectedOptions, (opt) => opt.value),
-                                )
-                              }
-                              className="h-32 min-h-[120px] w-full overflow-y-auto rounded-md border border-slate-200/70 bg-white px-2 py-1 text-sm text-slate-800 outline-none"
-                            >
-                              {availableActions.map((action) => (
-                                <option key={action.action_code} value={action.action_code}>
-                                  {action.action_name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-                              disabled={!availableSelection.length}
-                              onClick={moveToSelected}
-                            >
-                              &gt;&gt;
-                            </button>
-                            <button
-                              type="button"
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-                              disabled={!selectedSelection.length}
-                              onClick={moveToAvailable}
-                            >
-                              &lt;&lt;
-                            </button>
-                          </div>
-                          <div className="space-y-2">
-                            <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Selected values</p>
-                            <select
-                              multiple
-                              size={5}
-                              value={selectedSelection}
-                              onChange={(event) =>
-                                setSelectedSelection(
-                                  Array.from(event.target.selectedOptions, (opt) => opt.value),
-                                )
-                              }
-                              className="h-32 min-h-[120px] w-full overflow-y-auto rounded-md border border-slate-200/70 bg-white px-2 py-1 text-sm text-slate-800 outline-none"
-                            >
-                              {selectedActions.map((action) => (
-                                <option key={action.action_code} value={action.action_code}>
-                                  {action.action_name}
-                                </option>
-                              ))}
-                            </select>
+                      {(availableActions.length > 0 || selectedActions.length > 0) && (
+                        <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-4 text-sm text-slate-800 shadow-inner">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Available actions</p>
+                          <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
+                            <div className="space-y-2">
+                              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Available values</p>
+                              <select
+                                multiple
+                                size={5}
+                                value={availableSelection}
+                                onChange={(event) =>
+                                  setAvailableSelection(
+                                    Array.from(event.target.selectedOptions, (opt) => opt.value),
+                                  )
+                                }
+                                className="h-32 min-h-[120px] w-full overflow-y-auto rounded-md border border-slate-200/70 bg-white px-2 py-1 text-sm text-slate-800 outline-none"
+                              >
+                                {availableActions.map((action) => (
+                                  <option key={action.action_code} value={action.action_code}>
+                                    {action.action_name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={!availableSelection.length}
+                                onClick={moveToSelected}
+                              >
+                                &gt;&gt;
+                              </button>
+                              <button
+                                type="button"
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={!selectedSelection.length}
+                                onClick={moveToAvailable}
+                              >
+                                &lt;&lt;
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Selected values</p>
+                              <select
+                                multiple
+                                size={5}
+                                value={selectedSelection}
+                                onChange={(event) =>
+                                  setSelectedSelection(
+                                    Array.from(event.target.selectedOptions, (opt) => opt.value),
+                                  )
+                                }
+                                className="h-32 min-h-[120px] w-full overflow-y-auto rounded-md border border-slate-200/70 bg-white px-2 py-1 text-sm text-slate-800 outline-none"
+                              >
+                                {selectedActions.map((action) => (
+                                  <option key={action.action_code} value={action.action_code}>
+                                    {action.action_name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                       {credentialFields.length > 0 && (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
