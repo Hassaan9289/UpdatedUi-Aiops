@@ -4,7 +4,6 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { RequireRole } from "@/components/auth/RequireRole";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { KpiCard } from "@/components/ui/KpiCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AGENT_HELLO_HOST } from "@/config/api";
 import { useSessionStore } from "@/lib/auth/session";
@@ -1540,14 +1539,14 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <section id="recent-incidents" className="grid gap-4 lg:grid-cols-2 items-stretch">
+          <section id="recent-incidents" className="grid gap-3 lg:grid-cols-[220px_1fr] items-stretch">
             <div className="flex items-center gap-3 lg:col-span-2">
               <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
               <p className="section-title whitespace-nowrap px-3">Recent closed incidents</p>
               <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
             </div>
 
-            <Card className="flex flex-col space-y-4">
+            <Card className="flex flex-col space-y-4 w-fit max-w-[280px]">
               <div className="min-h-[220px] flex-1">
                 {serviceNowIncidentsLoading ? (
                   <p className="text-sm text-white/70">Loading incidents…</p>
@@ -1568,26 +1567,20 @@ export default function DashboardPage() {
                             key={key}
                             type="button"
                             onClick={() => setSelectedServiceNowIncidentId(incident.number ?? null)}
-                            className={`flex w-full flex-col gap-1 rounded-xl border p-4 text-left text-sm transition ${
+                            className={`group flex w-full items-center justify-between gap-2 rounded-xl border p-3 text-left text-sm transition ${
                               isSelected
                                 ? "border-slate-300 bg-slate-200 text-slate-900 shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
                                 : "border-transparent bg-white/5 text-white hover:bg-white/10"
                             }`}
                           >
-                            <div className="flex items-baseline justify-between gap-3">
-                              <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
-                                {incident.number ?? "Unknown"}
-                              </p>
-                              <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/60"}`}>
-                                {incident.opened_at ? new Date(incident.opened_at).toLocaleString() : "Date unknown"}
-                              </p>
-                            </div>
-                            <p className={isSelected ? "text-slate-800" : "text-white/70"}>
-                              {incident.short_description ?? "No description"}
+                            <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
+                              {incident.number ?? "Unknown"}
                             </p>
-                            <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/50"}`}>
-                              Status: {incident.status ?? "N/A"} • Priority: {incident.priority ?? "N/A"}
-                            </p>
+                            {isSelected ? (
+                              <span className="text-base text-slate-700">→</span>
+                            ) : (
+                              <span className="text-base text-transparent group-hover:text-slate-400">→</span>
+                            )}
                           </button>
                         );
                       })}
@@ -1598,74 +1591,104 @@ export default function DashboardPage() {
             </Card>
 
             <Card className="flex flex-col gap-3 min-h-[220px]">
-              <div className="flex items-start justify-between">
-                <p className="section-title">Incident details</p>
-                {selectedServiceNowIncident?.opened_at && (
-                  <p className="text-xs text-white/60">{new Date(selectedServiceNowIncident.opened_at).toLocaleString()}</p>
-                )}
-              </div>
-              <div className="min-h-[180px] flex-1">
-                {!selectedServiceNowIncident ? (
-                  <p className="text-sm text-white/60">
-                    {serviceNowIncidentsLoading
-                      ? "Loading incident details…"
-                      : "Click on an incident to see its details."}
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[520px] lg:h-[460px] pr-3">
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <p className="text-base font-semibold text-white">
-                          {selectedServiceNowIncident.number ?? "Unknown incident"}
-                        </p>
-                        <p className="text-sm text-white/70">
-                          {selectedServiceNowIncident.short_description ?? "No description provided."}
-                        </p>
-                      </div>
+  <div className="flex items-start justify-between">
+    <p className="section-title">Incident details</p>
+    {selectedServiceNowIncident?.opened_at && (
+      <p className="text-xs text-white/60">
+        {new Date(selectedServiceNowIncident.opened_at).toLocaleString()}
+      </p>
+    )}
+  </div>
 
-                      <div className="space-y-2 rounded-2xl border border-white/5 bg-white/5 p-3">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60">Incident fields</h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {(() => {
-                            const preferredOrder = [
-                              "number",
-                              "short_description",
-                              "status",
-                              "state",
-                              "category",
-                              "u_ai_category",
-                              "notify",
-                              "opened_at",
-                              "closed_at",
-                              "close_notes",
-                              "sys_id",
-                            ];
-                            const keys = Object.keys(selectedServiceNowIncident);
-                            const orderedKeys = [
-                              ...preferredOrder.filter((k) => keys.includes(k)),
-                              ...keys.filter((k) => !preferredOrder.includes(k)),
-                            ];
-                            return orderedKeys.map((key) => (
-                              <div
-                                key={key}
-                                className="grid grid-cols-3 gap-2 rounded-xl border border-white/5 bg-transparent p-2"
-                              >
-                                <div className="col-span-1 text-xs font-semibold uppercase tracking-wide text-white/60">
-                                  {formatKey(key)}
-                                </div>
-                                <div className="col-span-2 whitespace-pre-wrap break-words text-sm text-white/90">
-                                  <IncidentValue value={(selectedServiceNowIncident as any)[key]} />
-                                </div>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  </ScrollArea>
-                )}
+  <div className="min-h-[180px] flex-1">
+    {!selectedServiceNowIncident ? (
+      <p className="text-sm text-white/60">
+        {serviceNowIncidentsLoading
+          ? "Loading incident details…"
+          : "Click on an incident to see its details."}
+      </p>
+    ) : (
+      <ScrollArea className="h-[520px] lg:h-[460px] pr-3">
+        <div className="space-y-4">
+          {/* Incident title + short description */}
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-white">
+              {selectedServiceNowIncident.number ?? "Unknown incident"}
+            </p>
+            <p className="text-sm text-white/70">
+              {selectedServiceNowIncident.short_description ??
+                "No description provided."}
+            </p>
+          </div>
+
+          {/* Table-style incident fields */}
+          {(() => {
+            const preferredOrder = [
+              "number",
+              "short_description",
+              "status",
+              "state",
+              "category",
+              "u_ai_category",
+              "notify",
+              "opened_at",
+              "closed_at",
+              "close_notes",
+              "sys_id"
+            ];
+
+            const keys = Object.keys(selectedServiceNowIncident);
+            const orderedKeys = [
+              ...preferredOrder.filter((k) => keys.includes(k)),
+              ...keys.filter((k) => !preferredOrder.includes(k))
+            ];
+
+            return (
+              <div className="rounded-2xl border border-white/5 bg-white/5 overflow-hidden">
+                {/* Section header */}
+                <div className="border-b border-white/5 px-4 py-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60">
+                    Incident fields
+                  </h4>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-white/5 text-[11px] uppercase tracking-[0.12em] text-white/60">
+                        <th className="px-4 py-3 text-left">Field</th>
+                        <th className="px-4 py-3 text-left">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {orderedKeys.map((key) => (
+                        <tr
+                          key={key}
+                          className="hover:bg-white/[0.03] transition-colors"
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap text-xs font-semibold text-white/70">
+                            {formatKey(key)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-white/90 break-words">
+                            <IncidentValue
+                              value={(selectedServiceNowIncident as any)[key]}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </Card>
+            );
+          })()}
+        </div>
+      </ScrollArea>
+    )}
+  </div>
+</Card>
+
           </section>
         </div>
       </RequireRole>
