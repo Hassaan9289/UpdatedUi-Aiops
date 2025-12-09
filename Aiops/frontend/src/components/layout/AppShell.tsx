@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
             <Button
               variant="destructive"
-              className="flex items-center gap-2 rounded-full px-5 py-2 text-sm shadow-[0_6px_14px_rgba(244,63,94,0.25)]"
+              className="flex items-center gap-2 rounded-lg px-5 py-2 text-sm shadow-[0_6px_14px_rgba(244,63,94,0.25)]"
               onClick={requestSignOut}
             >
               Sign out

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { AGENT_ORG_KEY } from "@/config/agent";
 import { AGENT_API_BASE } from "@/config/api";
 import { AgentSummary, formatCurrentTime, useAgents } from "@/lib/useAgents";
-import { Search, Settings } from "lucide-react";
+import { Bot, Search, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const agentStatusVariant: Record<string, "success" | "warning"> = {
@@ -682,13 +682,13 @@ export default function AgentManagementPage() {
     <AuthGate>
       <RequireRole roles={["admin", "operator"]}>
         <section className="space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex-1 min-w-[240px]">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
+            <div className="min-w-[240px]">
               <p className="section-title">Agent management</p>
               <p className="text-sm text-white/60">Lifecycle, versioning, and health of deployed agents.</p>
             </div>
-            <div className="flex flex-1 min-w-[240px] justify-center">
-              <div className="relative w-full max-w-md">
+            <div className="flex justify-center">
+              <div className="relative w-full max-w-xl">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   className="w-full rounded-lg border border-slate-200/80 bg-white/80 px-9 py-2 text-sm text-slate-800 placeholder:text-slate-400 shadow-[0_6px_20px_rgba(15,23,42,0.05)] focus:border-slate-400 focus:outline-none"
@@ -699,10 +699,29 @@ export default function AgentManagementPage() {
               </div>
             </div>
             <div className="flex min-w-[200px] justify-end">
-              <Button variant="default" className="px-5 py-3 text-sm font-medium tracking-[0.15em]" onClick={openModal}>
-                + Create new agent
-              </Button>
-            </div>
+  <Button
+    type="button"
+    variant="default"
+    onClick={openModal}
+    className="
+      inline-flex items-center justify-center gap-2
+      rounded-lg border border-black bg-white px-4 py-2.5
+      text-sm font-medium text-slate-900
+      shadow-sm transition
+      hover:bg-slate-100
+      focus-visible:outline-none
+      focus-visible:ring-2 focus-visible:ring-black
+      focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950
+      disabled:cursor-not-allowed disabled:opacity-60
+    "
+  >
+    <span className="whitespace-nowrap">+ Create Agent</span>
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-white text-slate-900">
+      <Bot className="h-5 w-5" />
+    </span>
+  </Button>
+</div>
+
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
