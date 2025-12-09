@@ -1049,7 +1049,14 @@ export default function DashboardPage() {
               ) : (
                 visibleAgents.map((agent) => (
                   <Card key={agent.name} className="space-y-3 border-white/10 bg-white/5 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] transition hover:border-white/20 hover:bg-white/10">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-semibold tracking-tight">{agent.name}</p>
+                        <p className="text-xs text-white/60">
+                          Port: {agent.running && agent.port ? agent.port : "Agent Not Started"} -{" "}
+                          {agent.version ?? agent.type}
+                        </p>
+                      </div>
                       {(() => {
                         const logoUrl = getEnterpriseLogo(agent.enterprise);
                         const enterpriseKey = (agent.enterprise ?? "").trim().toLowerCase();
@@ -1057,11 +1064,7 @@ export default function DashboardPage() {
                         const isMule = enterpriseKey.includes("mule");
                         const isIbm = enterpriseKey.includes("ibm");
                         if (!logoUrl) {
-                          return (
-                            <span className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-white/70" aria-hidden="true">
-                              <Bot className="h-5 w-5" />
-                            </span>
-                          );
+                          return <div className="h-10 w-10" aria-hidden="true" />;
                         }
                         const baseImg = (
                           <img
@@ -1089,13 +1092,6 @@ export default function DashboardPage() {
                           </div>
                         );
                       })()}
-                      <div>
-                        <p className="text-lg font-semibold tracking-tight">{agent.name}</p>
-                        <p className="text-xs text-white/60">
-                          Port: {agent.running && agent.port ? agent.port : "Agent Not Started"} -{" "}
-                          {agent.version ?? agent.type}
-                        </p>
-                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-white/70">Real-time: {agent.running ? 'Running' : 'Stopped'}</p>
