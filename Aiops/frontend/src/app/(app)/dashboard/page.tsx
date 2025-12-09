@@ -18,6 +18,10 @@ import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
 import topAnimation from "../../../../Guy talking to Robot _ AI Help.json";
 
+const GROQ_API_KEY = "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";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = "openai/gpt-oss-120b";
+
 type BackendIncident = {
   sys_id?: string;
   number?: string;
@@ -232,6 +236,44 @@ export default function DashboardPage() {
       return String(payload);
     }
   };
+  const getGroqResponse = async (userQuestion: string, agentRawResponse: unknown): Promise<string | null> => {
+    if (!GROQ_API_KEY) return null;
+    try {
+      const response = await fetch(GROQ_API_URL, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          temperature: 0.3,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an AI assistant summarizing and extracting key insights from ServiceNow agent responses. Reply in concise natural language only. Do not return tables, code blocks, or raw JSON. Provide a brief, human-readable answer.",
+            },
+            {
+              role: "user",
+              content: `User question:\n${userQuestion}\n\nAgent raw response (JSON):\n${serializeAgentResponse(agentRawResponse)}`,
+            },
+          ],
+        }),
+      });
+      const llmJson = await response.json().catch(() => null);
+      if (!response.ok) {
+        console.error("Groq LLM error response", llmJson);
+        return null;
+      }
+      const llmReply = llmJson?.choices?.[0]?.message?.content;
+      return typeof llmReply === "string" ? llmReply : serializeAgentResponse(llmReply);
+    } catch (err) {
+      console.error("Groq LLM request failed", err);
+      return null;
+    }
+  };
   const agentMixGradient = useMemo(() => {
     const onlineColor = "#22c55e";
     const offlineColor = "#cbd5e1";
@@ -369,13 +411,18 @@ export default function DashboardPage() {
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
       const rawReply = data?.reply ?? data?.message ?? data ?? "Sorry, I could not respond right now.";
-      const replyText =
-        isMuleAgent && typeof rawReply === "string"
-          ? formatMuleResponse(rawReply)
-          : serializeAgentResponse(rawReply);
+      const llmReply = await getGroqResponse(userMessage.text, data);
+      if (llmReply) {
+        console.log("Groq LLM chat response", llmReply);
+      } else {
+        console.log("Groq LLM chat response unavailable");
+      }
+      const finalText =
+        llmReply ??
+        (typeof rawReply === "string" ? rawReply : "I couldn't generate a natural-language summary right now.");
       setChatMessages((prev) => [
         ...prev,
-        { speaker: chatAgent.name, text: replyText, id: Date.now() + 3 },
+        { speaker: `${chatAgent.name}`, text: finalText, id: Date.now() + 3 },
       ]);
       setIsTyping(false);
     } catch (error) {
@@ -416,10 +463,25 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
               <span>Online</span>
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              {chatAgent?.port ? (
+                <span className="tracking-[0.2em] text-slate-500">Port: {chatAgent.port}</span>
+              ) : null}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {isChatMaximized && chatAgent ? (() => {
+            const logo = getEnterpriseLogo(chatAgent.enterprise ?? chatAgent.type);
+            return logo ? (
+              <div className="flex items-center justify-center min-w-[180px]">
+                <img
+                  src={logo}
+                  alt={`${chatAgent.enterprise ?? chatAgent.type ?? "Agent"} logo`}
+                  className="h-16 w-28 object-contain"
+                />
+              </div>
+            ) : null;
+          })() : null}
           {headerActions}
           <Button
             size="sm"
@@ -987,30 +1049,27 @@ export default function DashboardPage() {
               ) : (
                 visibleAgents.map((agent) => (
                   <Card key={agent.name} className="space-y-3 border-white/10 bg-white/5 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] transition hover:border-white/20 hover:bg-white/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-lg font-semibold tracking-tight">{agent.name}</p>
-                        <p className="text-xs text-white/60">
-                          Port: {agent.running && agent.port ? agent.port : "Agent Not Started"} -{" "}
-                          {agent.version ?? agent.type}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3">
                       {(() => {
                         const logoUrl = getEnterpriseLogo(agent.enterprise);
                         const enterpriseKey = (agent.enterprise ?? "").trim().toLowerCase();
                         const isServiceNow = enterpriseKey === "servicenow";
                         const isMule = enterpriseKey.includes("mule");
+                        const isIbm = enterpriseKey.includes("ibm");
                         if (!logoUrl) {
-                          return <div className="h-10 w-10" aria-hidden="true" />;
+                          return (
+                            <span className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-white/70" aria-hidden="true">
+                              <Bot className="h-5 w-5" />
+                            </span>
+                          );
                         }
                         const baseImg = (
                           <img
                             src={logoUrl}
                             alt={`${agent.enterprise ?? "Enterprise"} logo`}
-                            className={`object-contain ${isServiceNow ? "h-10 w-24" : "h-10 w-10"}`}
+                            className={`object-contain ${isServiceNow ? "h-12 w-28" : "h-10 w-10"}`}
                           />
                         );
-                        const isIbm = enterpriseKey.includes("ibm");
                         if (isMule) {
                           return (
                             <div className="relative h-8 w-8 overflow-hidden rounded-full" aria-label={`${agent.enterprise ?? "Enterprise"} logo`}>
@@ -1018,10 +1077,7 @@ export default function DashboardPage() {
                             </div>
                           );
                         }
-                        if (isIbm) {
-                          return baseImg;
-                        }
-                        if (isServiceNow) {
+                        if (isIbm || isServiceNow) {
                           return baseImg;
                         }
                         return (
@@ -1033,6 +1089,13 @@ export default function DashboardPage() {
                           </div>
                         );
                       })()}
+                      <div>
+                        <p className="text-lg font-semibold tracking-tight">{agent.name}</p>
+                        <p className="text-xs text-white/60">
+                          Port: {agent.running && agent.port ? agent.port : "Agent Not Started"} -{" "}
+                          {agent.version ?? agent.type}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-white/70">Real-time: {agent.running ? 'Running' : 'Stopped'}</p>
