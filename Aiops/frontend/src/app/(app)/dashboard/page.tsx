@@ -188,6 +188,8 @@ export default function DashboardPage() {
     closed: number | null;
   }>({ total: null, open: null, closed: null });
   const [serviceNowIncidentsLoading, setServiceNowIncidentsLoading] = useState(false);
+  const [incidentPieHover, setIncidentPieHover] = useState<"open" | "closed" | null>(null);
+  const incidentPieRef = useRef<HTMLDivElement | null>(null);
 
   const topAnomalies = useMemo(() => anomalies.slice(0, 4), [anomalies]);
 
@@ -218,6 +220,7 @@ export default function DashboardPage() {
   const [hoveredSegment, setHoveredSegment] = useState<"online" | "offline" | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const agentMixCardRef = useRef<HTMLDivElement | null>(null);
+  const agentMixHoverRef = useRef<"online" | "offline" | null>(null);
 
   const formatMuleResponse = (raw: string): string => {
     if (!raw) return "No response from agent.";
@@ -926,6 +929,12 @@ export default function DashboardPage() {
         : null;
   const openIncidentsNumber = serviceNowIncidentStats.open ?? null;
   const closedIncidentsNumber = serviceNowIncidentStats.closed ?? null;
+  const incidentPieOpenPct = useMemo(() => {
+    if (openIncidentsNumber === null || closedIncidentsNumber === null) return null;
+    const total = openIncidentsNumber + closedIncidentsNumber;
+    if (!total || total <= 0) return null;
+    return Math.min(100, Math.max(0, (openIncidentsNumber / total) * 100));
+  }, [openIncidentsNumber, closedIncidentsNumber]);
 
   return (
     <AuthGate>
@@ -1029,18 +1038,36 @@ export default function DashboardPage() {
                     <LoadingSpinner />
                   ) : totalIncidentsNumber !== null && openIncidentsNumber !== null && closedIncidentsNumber !== null ? (
                     <div
-                      className="relative h-36 w-36 rounded-full shadow-[0_18px_38px_rgba(0,0,0,0.1)]"
+                      ref={incidentPieRef}
+                      className={`relative h-40 w-40 rounded-full shadow-[0_18px_38px_rgba(0,0,0,0.1)] transition duration-200 ${
+                        incidentPieHover ? "scale-[1.04] shadow-[0_22px_45px_rgba(0,0,0,0.16)]" : ""
+                      }`}
                       aria-label="Incident open vs closed"
                       style={{
                         backgroundImage: (() => {
                           const total = openIncidentsNumber + closedIncidentsNumber;
                           if (!total || total <= 0) return "conic-gradient(#cbd5e1 0% 100%)";
-                          const openPct = Math.min(100, Math.max(0, (openIncidentsNumber / total) * 100));
-                          return `conic-gradient(#ef4444 0% ${openPct}%, #22c55e ${openPct}% 100%)`;
+                          const openPct = incidentPieOpenPct ?? Math.min(100, Math.max(0, (openIncidentsNumber / total) * 100));
+                          const openColor = incidentPieHover === "open" ? "#dc2626" : "#ef4444";
+                          const closedColor = incidentPieHover === "closed" ? "#16a34a" : "#22c55e";
+                          return `conic-gradient(${openColor} 0% ${openPct}%, ${closedColor} ${openPct}% 100%)`;
                         })(),
                       }}
+                      onMouseMove={(event) => {
+                        if (!incidentPieRef.current || incidentPieOpenPct === null) return;
+                        const rect = incidentPieRef.current.getBoundingClientRect();
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
+                        const x = event.clientX - cx;
+                        const y = event.clientY - cy;
+                        const angleFromTop = (Math.atan2(y, x) * 180) / Math.PI + 90;
+                        const angle = (angleFromTop + 360) % 360;
+                        const openAngle = incidentPieOpenPct * 3.6;
+                        setIncidentPieHover(angle <= openAngle ? "open" : "closed");
+                      }}
+                      onMouseLeave={() => setIncidentPieHover(null)}
                     >
-                      <div className="absolute inset-4 rounded-full bg-white/90 backdrop-blur-sm grid place-items-center text-sm font-semibold text-slate-800">
+                      <div className="absolute inset-5 rounded-full bg-white/92 backdrop-blur-sm grid place-items-center text-base font-semibold text-slate-800">
                         {totalIncidentsNumber}
                       </div>
                     </div>
@@ -1121,7 +1148,9 @@ export default function DashboardPage() {
                 </div>
                 {totalAgentCount > 0 ? (
                   <div
-                    className="relative h-40 w-40 sm:h-48 sm:w-48"
+                    className={`relative h-44 w-44 sm:h-52 sm:w-52 transition duration-200 ${
+                      hoveredSegment ? "scale-[1.03] shadow-[0_20px_44px_rgba(0,0,0,0.16)]" : ""
+                    }`}
                     onMouseMove={(e) => {
                       if (!totalAgentCount || !agentMixCardRef.current) return;
                       const pieRect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
@@ -1131,21 +1160,37 @@ export default function DashboardPage() {
                       const angleFromTop = (Math.atan2(y, x) * 180) / Math.PI + 90;
                       const angle = (angleFromTop + 360) % 360;
                       const onlineAngle = (onlinePercent / 100) * 360;
-                      setHoveredSegment(angle <= onlineAngle ? "online" : "offline");
+                      const hoverSide = angle <= onlineAngle ? "online" : "offline";
+                      setHoveredSegment(hoverSide);
+                      agentMixHoverRef.current = hoverSide;
                       setTooltipPos({ x: e.clientX - cardRect.left, y: e.clientY - cardRect.top + 12 });
                     }}
                     onMouseLeave={() => {
                       setHoveredSegment(null);
+                      agentMixHoverRef.current = null;
                       setTooltipPos(null);
                     }}
                   >
                     <div
                       className="absolute inset-0 rounded-full shadow-[0_14px_28px_rgba(15,23,42,0.18)]"
-                      style={{ backgroundImage: agentMixGradient }}
+                      style={{
+                        backgroundImage: (() => {
+                          if (!totalAgentCount) return agentMixGradient;
+                          const isOnline = agentMixHoverRef.current === "online";
+                          const isOffline = agentMixHoverRef.current === "offline";
+                          const onlineColor = isOnline ? "#16a34a" : "#22c55e";
+                          const offlineColor = isOffline ? "#cbd5e1" : "#e2e8f0";
+                          if (!totalAgentCount) return `conic-gradient(${offlineColor} 0% 100%)`;
+                          const pct = onlinePercent;
+                          if (pct <= 0) return `conic-gradient(${offlineColor} 0% 100%)`;
+                          if (pct >= 100) return `conic-gradient(${onlineColor} 0% 100%)`;
+                          return `conic-gradient(${onlineColor} 0% ${pct}%, ${offlineColor} ${pct}% 100%)`;
+                        })(),
+                      }}
                       aria-hidden="true"
                     />
                     <div
-                      className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-white/0 opacity-80"
+                      className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-white/0 opacity-90"
                       aria-hidden="true"
                     />
                   </div>
