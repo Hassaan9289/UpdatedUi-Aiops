@@ -454,7 +454,7 @@ export default function DashboardPage() {
       setServiceNowIncidentsLoading(false);
       setServiceNowIncidents([]);
     };
-  }, [agents, selectedServiceNowIncidentId]);
+  }, [agents]);
 
   const handleSendMessage = async () => {
     if (!chatAgent || !draftMessage.trim()) return;
