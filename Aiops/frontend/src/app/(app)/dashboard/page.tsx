@@ -918,6 +918,14 @@ export default function DashboardPage() {
   const resolvedDisplayValue =
     serviceNowIncidentsLoading ? <LoadingSpinner /> :
     serviceNowIncidentStats.closed !== null ? serviceNowIncidentStats.closed.toString() : "--";
+  const totalIncidentsNumber =
+    serviceNowIncidentStats.total !== null
+      ? serviceNowIncidentStats.total
+      : serviceNowCount !== null
+        ? serviceNowCount
+        : null;
+  const openIncidentsNumber = serviceNowIncidentStats.open ?? null;
+  const closedIncidentsNumber = serviceNowIncidentStats.closed ?? null;
 
   return (
     <AuthGate>
@@ -982,26 +990,68 @@ export default function DashboardPage() {
             <Button variant="muted" className="rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200" onClick={() => scrollTo("recent-incidents")}>Recent incidents</Button>
           </nav>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <KpiCard
-              label="Total incidents"
-              value={totalIncidentsDisplayValue}
-              delta="-18% vs last week"
-              trend="down"
-              icon={<ShieldIcon />}
-              caption={
-                serviceNowCount !== null
-                  ? "ServiceNow-reported total incidents"
-                  : "ServiceNow agent not available"
-              }
-            />
-            <KpiCard
-              label="Resolved incidents"
-              value={resolvedDisplayValue}
-              delta="AI Agent & Hotfix only"
-              icon={<ShieldIcon />}
-              caption="Filtered by backend incidents service"
-            />
+          <section className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
+            <Card className="relative overflow-hidden border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Total incidents</p>
+                  <p className="text-3xl font-semibold text-slate-900">
+                    {serviceNowCountLoading || serviceNowIncidentsLoading ? <LoadingSpinner /> : (
+                      totalIncidentsNumber !== null ? totalIncidentsNumber : "--"
+                    )}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {serviceNowCount !== null
+                      ? "ServiceNow-reported total incidents"
+                      : "Start ServiceNow agent to see incident details"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-4">
+                <div className="flex flex-col gap-2 text-sm text-slate-700">
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-emerald-500" aria-hidden="true" />
+                    <span>Closed</span>
+                    <span className="text-slate-500">
+                      {serviceNowIncidentsLoading ? "…" : closedIncidentsNumber ?? "--"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-rose-500" aria-hidden="true" />
+                    <span>Open</span>
+                    <span className="text-slate-500">
+                      {serviceNowIncidentsLoading ? "…" : openIncidentsNumber ?? "--"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center">
+                  {serviceNowIncidentsLoading ? (
+                    <LoadingSpinner />
+                  ) : totalIncidentsNumber !== null && openIncidentsNumber !== null && closedIncidentsNumber !== null ? (
+                    <div
+                      className="relative h-36 w-36 rounded-full shadow-[0_18px_38px_rgba(0,0,0,0.1)]"
+                      aria-label="Incident open vs closed"
+                      style={{
+                        backgroundImage: (() => {
+                          const total = openIncidentsNumber + closedIncidentsNumber;
+                          if (!total || total <= 0) return "conic-gradient(#cbd5e1 0% 100%)";
+                          const openPct = Math.min(100, Math.max(0, (openIncidentsNumber / total) * 100));
+                          return `conic-gradient(#ef4444 0% ${openPct}%, #22c55e ${openPct}% 100%)`;
+                        })(),
+                      }}
+                    >
+                      <div className="absolute inset-4 rounded-full bg-white/90 backdrop-blur-sm grid place-items-center text-sm font-semibold text-slate-800">
+                        {totalIncidentsNumber}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-slate-200 text-xs text-slate-500 text-center p-4">
+                      Start ServiceNow agent
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
             <Card className="relative overflow-hidden border border-white/10 bg-gradient-to-br from-white/95 to-slate-50 shadow-[0_14px_35px_rgba(15,23,42,0.12)] xl:col-span-2">
               <div className="flex items-start justify-between gap-4 p-5" ref={agentMixCardRef}>
                 <div className="relative flex flex-col justify-between gap-4">
