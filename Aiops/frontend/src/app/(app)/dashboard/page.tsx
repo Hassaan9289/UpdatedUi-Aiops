@@ -12,7 +12,7 @@ import { getEnterpriseLogo } from "@/lib/enterpriseLogos";
 import { useAIOpsStore } from "@/lib/store";
 import { useAgents, type AgentSummary } from "@/lib/useAgents";
 import { useLottieLoader } from "@/lib/useLottieLoader";
-import { ArrowRight, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
+import { ArrowRight, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
@@ -201,15 +201,19 @@ export default function DashboardPage() {
   const onlineAgentCount = useMemo(() => agents.filter((a) => a.running).length, [agents]);
   const totalAgentCount = agents.length;
   const offlineAgentCount = Math.max(0, totalAgentCount - onlineAgentCount);
+  const onlinePercent = totalAgentCount ? Math.round((onlineAgentCount / totalAgentCount) * 100) : 0;
+  const [hoveredSegment, setHoveredSegment] = useState<"online" | "offline" | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const agentMixCardRef = useRef<HTMLDivElement | null>(null);
   const agentMixGradient = useMemo(() => {
     const onlineColor = "#22c55e";
     const offlineColor = "#cbd5e1";
     if (!totalAgentCount) return `conic-gradient(${offlineColor} 0% 100%)`;
-    const onlinePercent = Math.round((onlineAgentCount / totalAgentCount) * 100);
-    if (onlinePercent <= 0) return `conic-gradient(${offlineColor} 0% 100%)`;
-    if (onlinePercent >= 100) return `conic-gradient(${onlineColor} 0% 100%)`;
-    return `conic-gradient(${onlineColor} 0% ${onlinePercent}%, ${offlineColor} ${onlinePercent}% 100%)`;
-  }, [onlineAgentCount, totalAgentCount]);
+    const pct = onlinePercent;
+    if (pct <= 0) return `conic-gradient(${offlineColor} 0% 100%)`;
+    if (pct >= 100) return `conic-gradient(${onlineColor} 0% 100%)`;
+    return `conic-gradient(${onlineColor} 0% ${pct}%, ${offlineColor} ${pct}% 100%)`;
+  }, [onlineAgentCount, totalAgentCount, onlinePercent]);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const anchor = chatBottomRef.current;
@@ -716,44 +720,149 @@ export default function DashboardPage() {
               caption="Filtered by backend incidents service"
             />
             <Card className="relative overflow-hidden border border-white/10 bg-gradient-to-br from-white/95 to-slate-50 shadow-[0_14px_35px_rgba(15,23,42,0.12)] xl:col-span-2">
-              <div className="flex items-start justify-between gap-4 p-5">
-                <div className="flex flex-col justify-between gap-4">
+              <div className="flex items-start justify-between gap-4 p-5" ref={agentMixCardRef}>
+                <div className="relative flex flex-col justify-between gap-4">
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Agent mix</p>
                     <p className="text-2xl font-semibold text-slate-900">
                       {totalAgentCount || 0} <span className="text-base font-normal text-slate-500">total</span>
                     </p>
                     <div className="flex items-center gap-4 pt-2 text-sm">
-                      <div className="flex items-center gap-2 text-slate-700">
+                      <div
+                        className="flex items-center gap-2 text-slate-700 cursor-pointer"
+                        onMouseEnter={(e) => {
+                          if (!agentMixCardRef.current) return;
+                          const rect = agentMixCardRef.current.getBoundingClientRect();
+                          setTooltipPos({ x: e.clientX - rect.left, y: e.clientY - rect.top + 12 });
+                          setHoveredSegment("online");
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredSegment(null);
+                          setTooltipPos(null);
+                        }}
+                      >
                         <span className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]" />
-                        <span className="font-medium">Online</span>
+                        <span
+                          className={`font-medium transition ${
+                            hoveredSegment === "online" ? "underline decoration-emerald-500 decoration-2" : ""
+                          }`}
+                        >
+                          Online
+                        </span>
                         <span className="text-emerald-600 font-semibold">{onlineAgentCount}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-700">
+                      <div
+                        className="flex items-center gap-2 text-slate-700 cursor-pointer"
+                        onMouseEnter={(e) => {
+                          if (!agentMixCardRef.current) return;
+                          const rect = agentMixCardRef.current.getBoundingClientRect();
+                          setTooltipPos({ x: e.clientX - rect.left, y: e.clientY - rect.top + 12 });
+                          setHoveredSegment("offline");
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredSegment(null);
+                          setTooltipPos(null);
+                        }}
+                      >
                         <span className="h-3 w-3 rounded-full bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.25)]" />
-                        <span className="font-medium">Offline</span>
+                        <span
+                          className={`font-medium transition ${
+                            hoveredSegment === "offline" ? "underline decoration-slate-400 decoration-2" : ""
+                          }`}
+                        >
+                          Offline
+                        </span>
                         <span className="text-slate-500 font-semibold">{offlineAgentCount}</span>
                       </div>
                     </div>
                   </div>
-                  <Link
-                    to="/agent-management"
-                    className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-red-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(244,63,94,0.3)] ring-1 ring-white/10 transition hover:translate-x-0.5 hover:shadow-[0_14px_34px_rgba(248,113,113,0.4)]"
-                  >
-                    Go to agent management
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                  </Link>
+                  <div className="pt-6">
+                    <Link
+                      to="/agent-management"
+                      className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-red-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(244,63,94,0.3)] ring-1 ring-white/10 transition hover:translate-x-0.5 hover:shadow-[0_14px_34px_rgba(248,113,113,0.4)]"
+                    >
+                      Go to agent management
+                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
                 </div>
-                <div className="relative h-40 w-40 sm:h-48 sm:w-48">
+                {totalAgentCount > 0 ? (
                   <div
-                    className="absolute inset-0 rounded-full shadow-[0_14px_28px_rgba(15,23,42,0.18)]"
-                    style={{ backgroundImage: agentMixGradient }}
-                    aria-hidden="true"
-                  />
-                  <div
-                    className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-white/0 opacity-80"
-                    aria-hidden="true"
-                  />
+                    className="relative h-40 w-40 sm:h-48 sm:w-48"
+                    onMouseMove={(e) => {
+                      if (!totalAgentCount || !agentMixCardRef.current) return;
+                      const pieRect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                      const cardRect = agentMixCardRef.current.getBoundingClientRect();
+                      const x = e.clientX - (pieRect.left + pieRect.width / 2);
+                      const y = e.clientY - (pieRect.top + pieRect.height / 2);
+                      const angleFromTop = (Math.atan2(y, x) * 180) / Math.PI + 90;
+                      const angle = (angleFromTop + 360) % 360;
+                      const onlineAngle = (onlinePercent / 100) * 360;
+                      setHoveredSegment(angle <= onlineAngle ? "online" : "offline");
+                      setTooltipPos({ x: e.clientX - cardRect.left, y: e.clientY - cardRect.top + 12 });
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredSegment(null);
+                      setTooltipPos(null);
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 rounded-full shadow-[0_14px_28px_rgba(15,23,42,0.18)]"
+                      style={{ backgroundImage: agentMixGradient }}
+                      aria-hidden="true"
+                    />
+                    <div
+                      className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-white/0 opacity-80"
+                      aria-hidden="true"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-40 w-40 sm:h-48 sm:w-48 items-center justify-center rounded-full bg-slate-100 text-sm font-medium text-slate-500">
+                    No agents to display
+                  </div>
+                )}
+                <div
+                  className="pointer-events-none absolute w-64 rounded-xl border border-slate-200/60 bg-white/90 p-3 shadow-lg backdrop-blur transition-opacity duration-150"
+                  style={{
+                    opacity: hoveredSegment && tooltipPos ? 1 : 0,
+                    left: tooltipPos?.x ?? 0,
+                    top: tooltipPos?.y ?? 0,
+                    transform: "translate(12px, 12px)",
+                  }}
+                >
+                  {hoveredSegment && (
+                    <>
+                      <p className="mb-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+                        {hoveredSegment === "online" ? "Online agents" : "Offline agents"}
+                      </p>
+                      <ul className="space-y-1 text-sm text-slate-800">
+                        {(
+                          hoveredSegment === "online"
+                            ? agents.filter((a) => a.running)
+                            : agents.filter((a) => !a.running)
+                        )
+                          .slice(0, 4)
+                          .map((agent) => (
+                            <li key={agent.agentId} className="flex items-center justify-between">
+                              <span className="font-medium">{agent.name}</span>
+                              {hoveredSegment === "online" && agent.port ? (
+                                <span className="text-xs text-slate-500">:{agent.port}</span>
+                              ) : null}
+                            </li>
+                          ))}
+                        {(() => {
+                          const list =
+                            hoveredSegment === "online"
+                              ? agents.filter((a) => a.running)
+                              : agents.filter((a) => !a.running);
+                          const remaining = Math.max(0, list.length - 4);
+                          return remaining > 0 ? (
+                            <li className="text-xs text-slate-500">+{remaining} more</li>
+                          ) : null;
+                        })()}
+                      </ul>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
