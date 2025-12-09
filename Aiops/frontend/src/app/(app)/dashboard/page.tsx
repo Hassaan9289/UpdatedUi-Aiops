@@ -188,6 +188,8 @@ export default function DashboardPage() {
     closed: number | null;
   }>({ total: null, open: null, closed: null });
   const [serviceNowIncidentsLoading, setServiceNowIncidentsLoading] = useState(false);
+  const [serviceNowIncidents, setServiceNowIncidents] = useState<any[]>([]);
+  const [selectedServiceNowIncidentId, setSelectedServiceNowIncidentId] = useState<string | null>(null);
   const [incidentPieHover, setIncidentPieHover] = useState<"open" | "closed" | null>(null);
   const incidentPieRef = useRef<HTMLDivElement | null>(null);
 
@@ -354,6 +356,8 @@ export default function DashboardPage() {
       setServiceNowCountLoading(false);
       setServiceNowCount(null);
       setServiceNowIncidentStats({ total: null, open: null, closed: null });
+      setServiceNowIncidents([]);
+      setSelectedServiceNowIncidentId(null);
       setServiceNowIncidentsLoading(false);
       return () => {
         controller.abort();
@@ -397,6 +401,11 @@ export default function DashboardPage() {
           throw new Error("Unable to fetch ServiceNow incidents");
         }
         const incidents: any[] = Array.isArray(detailsJson?.incidents) ? detailsJson.incidents : [];
+        const sortedIncidents = [...incidents].sort((a, b) => {
+          const da = a?.opened_at ? new Date(a.opened_at).getTime() : 0;
+          const db = b?.opened_at ? new Date(b.opened_at).getTime() : 0;
+          return db - da;
+        });
         const closed = incidents.filter((inc) => String(inc?.status ?? "").toLowerCase() === "closed").length;
         const open = incidents.filter((inc) => String(inc?.status ?? "").toLowerCase() === "open").length;
         const totalFromDetails = Number(detailsJson?.total_incidents);
@@ -406,6 +415,13 @@ export default function DashboardPage() {
             open,
             closed,
           });
+          setServiceNowIncidents(sortedIncidents);
+          if (!selectedServiceNowIncidentId && sortedIncidents.length) {
+            const firstClosed = sortedIncidents.find(
+              (inc) => String(inc?.status ?? "").toLowerCase() === "closed",
+            );
+            setSelectedServiceNowIncidentId(firstClosed?.number ?? sortedIncidents[0]?.number ?? null);
+          }
           setServiceNowIncidentsLoading(false);
         }
       } catch (err) {
@@ -413,6 +429,8 @@ export default function DashboardPage() {
           setServiceNowCount(null);
           setServiceNowCountLoading(false);
           setServiceNowIncidentStats({ total: null, open: null, closed: null });
+          setServiceNowIncidents([]);
+          setSelectedServiceNowIncidentId(null);
           setServiceNowIncidentsLoading(false);
           if (allowRetry) {
             serviceNowCountRetryRef.current = window.setTimeout(() => {
@@ -434,8 +452,9 @@ export default function DashboardPage() {
       }
       setServiceNowCountLoading(false);
       setServiceNowIncidentsLoading(false);
+      setServiceNowIncidents([]);
     };
-  }, [agents]);
+  }, [agents, selectedServiceNowIncidentId]);
 
   const handleSendMessage = async () => {
     if (!chatAgent || !draftMessage.trim()) return;
@@ -935,6 +954,23 @@ export default function DashboardPage() {
     if (!total || total <= 0) return null;
     return Math.min(100, Math.max(0, (openIncidentsNumber / total) * 100));
   }, [openIncidentsNumber, closedIncidentsNumber]);
+  const serviceNowClosedIncidents = useMemo(
+    () => serviceNowIncidents.filter((inc) => String(inc?.status ?? "").toLowerCase() === "closed"),
+    [serviceNowIncidents],
+  );
+  const selectedServiceNowIncident = useMemo(() => {
+    if (!selectedServiceNowIncidentId) return null;
+    return serviceNowIncidents.find((inc) => inc?.number === selectedServiceNowIncidentId) ?? null;
+  }, [selectedServiceNowIncidentId, serviceNowIncidents]);
+
+  useEffect(() => {
+    if (selectedServiceNowIncidentId) return;
+    if (serviceNowClosedIncidents.length) {
+      setSelectedServiceNowIncidentId(serviceNowClosedIncidents[0].number ?? null);
+    } else if (serviceNowIncidents.length) {
+      setSelectedServiceNowIncidentId(serviceNowIncidents[0].number ?? null);
+    }
+  }, [selectedServiceNowIncidentId, serviceNowClosedIncidents, serviceNowIncidents]);
 
   return (
     <AuthGate>
@@ -1504,78 +1540,86 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <section id="recent-incidents" className="grid gap-4 lg:grid-cols-2">
+          <section id="recent-incidents" className="grid gap-4 lg:grid-cols-2 items-stretch">
             <div className="flex items-center gap-3 lg:col-span-2">
               <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
               <p className="section-title whitespace-nowrap px-3">Recent closed incidents</p>
               <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
             </div>
 
-            <Card className="space-y-4">
-              <div className="min-h-[180px] space-y-3">
-                {backendLoading && <p className="text-sm text-white/70">Loading incidents…</p>}
-                {backendError && <p className="text-sm text-rose-400">{backendError}</p>}
-                {!backendLoading && !backendError && (
-                  <>
-                    {recentClosed.length === 0 && (
-                      <p className="text-sm text-white/60">No closed incidents available.</p>
-                    )}
-                    {recentClosed.map((incident, index) => {
-                      const key = incidentKey(incident, index);
-                      const isSelected = selectedClosedIncidentId === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setSelectedClosedIncidentId(key)}
-                          className={`flex w-full flex-col gap-1 rounded-lg border p-3 text-left text-sm transition ${
-                            isSelected
-                              ? "border-slate-300 bg-slate-200 text-slate-900 shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
-                              : "border-transparent bg-white/5 text-white hover:bg-white/12"
-                          }`}
-                        >
-                          <div className="flex items-baseline justify-between gap-3">
-                            <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
-                              {incident.number ?? "Unknown"}
+            <Card className="flex flex-col space-y-4">
+              <div className="min-h-[220px] flex-1">
+                {serviceNowIncidentsLoading ? (
+                  <p className="text-sm text-white/70">Loading incidents…</p>
+                ) : serviceNowClosedIncidents.length === 0 ? (
+                  <p className="text-sm text-white/60">
+                    {serviceNowIncidentStats.total === null
+                      ? "Start ServiceNow agent to see incident details."
+                      : "No closed incidents available."}
+                  </p>
+                ) : (
+                  <ScrollArea className="h-[520px] pr-3">
+                    <div className="space-y-3">
+                      {serviceNowClosedIncidents.map((incident) => {
+                        const key = incident.number ?? incident.opened_at ?? String(incident.short_description ?? "");
+                        const isSelected = selectedServiceNowIncidentId === incident.number;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setSelectedServiceNowIncidentId(incident.number ?? null)}
+                            className={`flex w-full flex-col gap-1 rounded-xl border p-4 text-left text-sm transition ${
+                              isSelected
+                                ? "border-slate-300 bg-slate-200 text-slate-900 shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
+                                : "border-transparent bg-white/5 text-white hover:bg-white/10"
+                            }`}
+                          >
+                            <div className="flex items-baseline justify-between gap-3">
+                              <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
+                                {incident.number ?? "Unknown"}
+                              </p>
+                              <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/60"}`}>
+                                {incident.opened_at ? new Date(incident.opened_at).toLocaleString() : "Date unknown"}
+                              </p>
+                            </div>
+                            <p className={isSelected ? "text-slate-800" : "text-white/70"}>
+                              {incident.short_description ?? "No description"}
                             </p>
-                            <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/60"}`}>
-                              {incident.closed_at ? new Date(incident.closed_at).toLocaleString() : "Closed date unknown"}
+                            <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/50"}`}>
+                              Status: {incident.status ?? "N/A"} • Priority: {incident.priority ?? "N/A"}
                             </p>
-                          </div>
-                          <p className={isSelected ? "text-slate-800" : "text-white/70"}>
-                            {incident.short_description ?? "No description"}
-                          </p>
-                          <p className={`text-xs ${isSelected ? "text-slate-600" : "text-white/50"}`}>
-                            {(incident.close_notes && String(incident.close_notes)) || "Closed by AI agent"} • Notify:{" "}
-                            {incident.notify ?? "n/a"}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 )}
               </div>
             </Card>
 
-            <Card className="flex flex-col gap-3">
+            <Card className="flex flex-col gap-3 min-h-[220px]">
               <div className="flex items-start justify-between">
                 <p className="section-title">Incident details</p>
-                {selectedClosedIncident?.closed_at && (
-                  <p className="text-xs text-white/60">{new Date(selectedClosedIncident.closed_at).toLocaleString()}</p>
+                {selectedServiceNowIncident?.opened_at && (
+                  <p className="text-xs text-white/60">{new Date(selectedServiceNowIncident.opened_at).toLocaleString()}</p>
                 )}
               </div>
               <div className="min-h-[180px] flex-1">
-                {!selectedClosedIncident ? (
-                  <p className="text-sm text-white/60">Click on an incident to see its details.</p>
+                {!selectedServiceNowIncident ? (
+                  <p className="text-sm text-white/60">
+                    {serviceNowIncidentsLoading
+                      ? "Loading incident details…"
+                      : "Click on an incident to see its details."}
+                  </p>
                 ) : (
                   <ScrollArea className="h-[520px] lg:h-[460px] pr-3">
                     <div className="space-y-3">
                       <div className="space-y-1">
                         <p className="text-base font-semibold text-white">
-                          {selectedClosedIncident.number ?? "Unknown incident"}
+                          {selectedServiceNowIncident.number ?? "Unknown incident"}
                         </p>
                         <p className="text-sm text-white/70">
-                          {selectedClosedIncident.short_description ?? "No description provided."}
+                          {selectedServiceNowIncident.short_description ?? "No description provided."}
                         </p>
                       </div>
 
@@ -1586,15 +1630,17 @@ export default function DashboardPage() {
                             const preferredOrder = [
                               "number",
                               "short_description",
+                              "status",
                               "state",
                               "category",
                               "u_ai_category",
+                              "notify",
+                              "opened_at",
                               "closed_at",
                               "close_notes",
-                              "notify",
                               "sys_id",
                             ];
-                            const keys = Object.keys(selectedClosedIncident);
+                            const keys = Object.keys(selectedServiceNowIncident);
                             const orderedKeys = [
                               ...preferredOrder.filter((k) => keys.includes(k)),
                               ...keys.filter((k) => !preferredOrder.includes(k)),
@@ -1608,7 +1654,7 @@ export default function DashboardPage() {
                                   {formatKey(key)}
                                 </div>
                                 <div className="col-span-2 whitespace-pre-wrap break-words text-sm text-white/90">
-                                  <IncidentValue value={(selectedClosedIncident as any)[key]} />
+                                  <IncidentValue value={(selectedServiceNowIncident as any)[key]} />
                                 </div>
                               </div>
                             ));
