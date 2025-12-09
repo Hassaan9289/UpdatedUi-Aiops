@@ -182,6 +182,12 @@ export default function DashboardPage() {
   const [serviceNowCount, setServiceNowCount] = useState<number | null>(null);
   const serviceNowCountRetryRef = useRef<number | null>(null);
   const [serviceNowCountLoading, setServiceNowCountLoading] = useState(false);
+  const [serviceNowIncidentStats, setServiceNowIncidentStats] = useState<{
+    total: number | null;
+    open: number | null;
+    closed: number | null;
+  }>({ total: null, open: null, closed: null });
+  const [serviceNowIncidentsLoading, setServiceNowIncidentsLoading] = useState(false);
 
   const topAnomalies = useMemo(() => anomalies.slice(0, 4), [anomalies]);
 
@@ -344,6 +350,8 @@ export default function DashboardPage() {
     if (!serviceNowAgent) {
       setServiceNowCountLoading(false);
       setServiceNowCount(null);
+      setServiceNowIncidentStats({ total: null, open: null, closed: null });
+      setServiceNowIncidentsLoading(false);
       return () => {
         controller.abort();
       };
@@ -351,30 +359,58 @@ export default function DashboardPage() {
 
     const fetchCount = async (allowRetry: boolean) => {
       setServiceNowCountLoading(true);
+      setServiceNowIncidentsLoading(true);
       try {
-        const response = await fetch(
-          `${AGENT_HELLO_HOST}:${serviceNowAgent.port}/agent/serviceNow/count`,
-          {
+        const [countResp, detailsResp] = await Promise.all([
+          fetch(`${AGENT_HELLO_HOST}:${serviceNowAgent.port}/agent/serviceNow/count`, {
             method: "GET",
             headers: {
               accept: "application/json",
             },
             signal: controller.signal,
-          },
-        );
-        const json = await response.json().catch(() => null);
-        if (!response.ok) {
+          }),
+          fetch(`${AGENT_HELLO_HOST}:${serviceNowAgent.port}/agent/serviceNow/incidentDetails`, {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+            },
+            signal: controller.signal,
+          }),
+        ]);
+
+        const countJson = await countResp.json().catch(() => null);
+        const detailsJson = await detailsResp.json().catch(() => null);
+
+        if (!countResp.ok) {
           throw new Error("Unable to fetch ServiceNow count");
         }
-        const value = Number(json?.count);
+        const value = Number(countJson?.count);
         if (!isCancelled) {
           setServiceNowCount(Number.isFinite(value) ? value : null);
           setServiceNowCountLoading(false);
+        }
+
+        if (!detailsResp.ok) {
+          throw new Error("Unable to fetch ServiceNow incidents");
+        }
+        const incidents: any[] = Array.isArray(detailsJson?.incidents) ? detailsJson.incidents : [];
+        const closed = incidents.filter((inc) => String(inc?.status ?? "").toLowerCase() === "closed").length;
+        const open = incidents.filter((inc) => String(inc?.status ?? "").toLowerCase() === "open").length;
+        const totalFromDetails = Number(detailsJson?.total_incidents);
+        if (!isCancelled) {
+          setServiceNowIncidentStats({
+            total: Number.isFinite(totalFromDetails) ? totalFromDetails : Number.isFinite(value) ? value : null,
+            open,
+            closed,
+          });
+          setServiceNowIncidentsLoading(false);
         }
       } catch (err) {
         if (!isCancelled) {
           setServiceNowCount(null);
           setServiceNowCountLoading(false);
+          setServiceNowIncidentStats({ total: null, open: null, closed: null });
+          setServiceNowIncidentsLoading(false);
           if (allowRetry) {
             serviceNowCountRetryRef.current = window.setTimeout(() => {
               fetchCount(false);
@@ -394,6 +430,7 @@ export default function DashboardPage() {
         serviceNowCountRetryRef.current = null;
       }
       setServiceNowCountLoading(false);
+      setServiceNowIncidentsLoading(false);
     };
   }, [agents]);
 
@@ -873,12 +910,14 @@ export default function DashboardPage() {
       setSelectedClosedIncidentId(incidentKey(recentClosed[0], 0));
     }
   }, [incidentKey, recentClosed, selectedClosedIncidentId]);
-  const totalIncidentsDisplayValue = serviceNowCountLoading
-    ? <LoadingSpinner />
-    : serviceNowCount !== null
-      ? serviceNowCount.toString()
-      : "--";
-  const resolvedDisplayValue = backendLoading ? <LoadingSpinner /> : resolvedCount.toString();
+  const totalIncidentsDisplayValue =
+    serviceNowCountLoading || serviceNowIncidentsLoading ? <LoadingSpinner /> :
+    serviceNowIncidentStats.total !== null ? serviceNowIncidentStats.total.toString() :
+    serviceNowCount !== null ? serviceNowCount.toString() : "--";
+
+  const resolvedDisplayValue =
+    serviceNowIncidentsLoading ? <LoadingSpinner /> :
+    serviceNowIncidentStats.closed !== null ? serviceNowIncidentStats.closed.toString() : "--";
 
   return (
     <AuthGate>
@@ -926,8 +965,12 @@ export default function DashboardPage() {
                 <p className="text-sm text-slate-600">Resolved Incidents</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-semibold text-slate-900">{metrics.mttr}</p>
-                <p className="text-sm text-slate-600">MTTR</p>
+                <p className="text-3xl font-semibold text-slate-900">
+                  {serviceNowIncidentsLoading ? <LoadingSpinner /> : (
+                    serviceNowIncidentStats.open !== null ? serviceNowIncidentStats.open.toString() : "--"
+                  )}
+                </p>
+                <p className="text-sm text-slate-600">Open Incidents</p>
               </div>
             </div>
           </section>
