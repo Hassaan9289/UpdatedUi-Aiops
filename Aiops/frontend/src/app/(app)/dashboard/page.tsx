@@ -1075,12 +1075,14 @@ export default function DashboardPage() {
                           <img
                             src={logoUrl}
                             alt={`${agent.enterprise ?? "Enterprise"} logo`}
-                            className={`object-contain ${isServiceNow ? "h-10 w-24" : "h-8 w-8"}`}
+                            className={`object-contain ${
+                              isServiceNow ? "h-10 w-24" : isMule ? "h-10 w-10" : "h-8 w-8"
+                            }`}
                           />
                         );
                         if (isMule) {
                           return (
-                            <div className="relative h-8 w-8 overflow-hidden rounded-full" aria-label={`${agent.enterprise ?? "Enterprise"} logo`}>
+                            <div className="relative h-10 w-10 overflow-hidden rounded-full" aria-label={`${agent.enterprise ?? "Enterprise"} logo`}>
                               <div className="absolute inset-0 scale-125">{baseImg}</div>
                             </div>
                           );
@@ -1210,13 +1212,27 @@ export default function DashboardPage() {
                   Are you sure you want to {confirm.action} <span className="font-semibold">{confirm.name}</span>?
                 </p>
                 <div className="mt-5 flex justify-end gap-2">
-                  <Button variant="muted" onClick={() => setConfirm(null)}>Cancel</Button>
+                  <Button
+                    variant="outline"
+                    className="border-none bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition hover:shadow-[0_10px_24px_rgba(244,63,94,0.42)] hover:scale-[1.01] rounded-full px-4"
+                    onClick={() => setConfirm(null)}
+                  >
+                    Cancel
+                  </Button>
                   {confirm.action === 'start' ? (
-                    <Button className="border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500/85" variant="outline" onClick={() => { toggleAgent(confirm.name, 'start'); setConfirm(null); }}>
+                    <Button
+                      className="border-none bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition hover:shadow-[0_10px_24px_rgba(16,185,129,0.42)] hover:scale-[1.01] rounded-full px-4"
+                      variant="outline"
+                      onClick={() => { toggleAgent(confirm.name, 'start'); setConfirm(null); }}
+                    >
                       <Play className="mr-1 h-4 w-4" /> Start
                     </Button>
                   ) : (
-                    <Button className="border-rose-500 bg-rose-500 text-white hover:bg-rose-500/85" variant="outline" onClick={() => { toggleAgent(confirm.name, 'stop'); setConfirm(null); }}>
+                    <Button
+                      className="border-none bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition hover:shadow-[0_10px_24px_rgba(244,63,94,0.42)] hover:scale-[1.01] rounded-full px-4"
+                      variant="outline"
+                      onClick={() => { toggleAgent(confirm.name, 'stop'); setConfirm(null); }}
+                    >
                       <Square className="mr-1 h-4 w-4" /> Stop
                     </Button>
                   )}
