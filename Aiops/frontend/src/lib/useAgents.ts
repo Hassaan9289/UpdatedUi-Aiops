@@ -14,6 +14,7 @@ export type AgentSummary = {
   status: "healthy" | "warning";
   running: boolean;
   type: string;
+  enterprise?: string | null;
   version?: string;
   lastActionTime: string;
   port?: number | null;
@@ -25,6 +26,7 @@ type AgentApiItem = {
   zone?: string;
   status?: string;
   subType?: string;
+  enterprise?: string;
   agentType?: string;
   type?: string;
   version?: string;
@@ -56,6 +58,7 @@ const toAgentSummary = (agent: AgentApiItem): AgentSummary => ({
   status: agent.status === "RUNNING" ? "healthy" : "warning",
   running: agent.status === "RUNNING",
   type: agent.subType ?? agent.agentType ?? agent.type ?? "Agent",
+  enterprise: agent.enterprise ?? agent.subType ?? null,
   version: agent.version ?? "v1.0.0",
   lastActionTime: formatCurrentTime(),
   port: agent.port ?? null,
@@ -88,6 +91,15 @@ export const useAgents = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<number, AgentOverride>>(() => loadOverrides());
+
+  const removeOverride = useCallback((agentId: number) => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      delete next[agentId];
+      saveOverrides(next);
+      return next;
+    });
+  }, []);
 
   const applyOverride = useCallback(
     (agent: AgentSummary): AgentSummary => {
@@ -186,6 +198,32 @@ export const useAgents = () => {
     [updateOverride],
   );
 
+  const deleteAgent = useCallback(
+    async (agentId: number) => {
+      try {
+        const response = await fetch(`${AGENT_ACTION_BASE}/delete/${agentId}`, {
+          method: "DELETE",
+          headers: {
+            accept: "application/json",
+          },
+        });
+        const data = await response
+          .json()
+          .catch(() => null);
+        console.log("Delete agent response", data);
+        if (!response.ok) {
+          throw new Error("Unable to delete agent");
+        }
+        setAgents((prev) => prev.filter((agent) => agent.agentId !== agentId));
+        removeOverride(agentId);
+      } catch (err) {
+        console.error("Delete agent error", err);
+        throw err;
+      }
+    },
+    [removeOverride],
+  );
+
   const addAgent = useCallback(
     (agent: Omit<AgentSummary, "agentId"> & { agentId?: number; port?: number | null }) => {
       setAgents((prev) => [
@@ -196,6 +234,7 @@ export const useAgents = () => {
           status: agent.status,
           running: agent.running,
           type: agent.type,
+          enterprise: agent.enterprise ?? null,
           port: agent.port ?? null,
           version: agent.version,
           lastActionTime: agent.lastActionTime ?? formatCurrentTime(),
@@ -213,5 +252,6 @@ export const useAgents = () => {
     refresh,
     performAgentAction,
     addAgent,
+    deleteAgent,
   };
 };

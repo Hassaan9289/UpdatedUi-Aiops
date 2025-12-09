@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AGENT_ORG_KEY } from "@/config/agent";
 import { AGENT_API_BASE } from "@/config/api";
-import { formatCurrentTime, useAgents } from "@/lib/useAgents";
+import { AgentSummary, formatCurrentTime, useAgents } from "@/lib/useAgents";
 import { Search, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -47,7 +47,7 @@ type CredentialField = { field: string; type: string; label: string };
 const llmOptions = ["Groq"];
 
 export default function AgentManagementPage() {
-  const { agents, performAgentAction, addAgent } = useAgents();
+  const { agents, performAgentAction, addAgent, deleteAgent } = useAgents();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newAgentName, setNewAgentName] = useState("");
   const [agentTypes, setAgentTypes] = useState<AgentTypeOption[]>(apiFallbackAgentTypes);
@@ -245,6 +245,7 @@ export default function AgentManagementPage() {
         status: "healthy",
         running: false,
         type: selectedAgentType?.name ?? "Agent",
+        enterprise,
         lastActionTime: formatCurrentTime(),
         agentId: createdAgentId,
         port: createdAgentPort,
@@ -578,6 +579,7 @@ export default function AgentManagementPage() {
     agentName: string;
     type: "start" | "stop";
   } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AgentSummary | null>(null);
 
   const toggleAgent = (agentName: string, type: "start" | "stop") => {
     setConfirmAction({ agentName, type });
@@ -592,6 +594,17 @@ export default function AgentManagementPage() {
     }
     await performAgentAction(target.agentId, confirmAction.type);
     setConfirmAction(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteAgent(deleteTarget.agentId);
+    } catch (err) {
+      // Error is logged inside deleteAgent
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const serverFields = useMemo(
@@ -840,9 +853,18 @@ export default function AgentManagementPage() {
                             </button>
                             <button
                               type="button"
-                              className="inline-flex h-9 items-center justify-center rounded-md bg-red-500 px-3 text-white shadow-[0_6px_14px_rgba(244,67,54,0.25)] transition hover:bg-red-600"
+                              className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-white shadow-[0_6px_14px_rgba(244,67,54,0.25)] transition ${
+                                agent.running
+                                  ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                                  : "bg-red-500 hover:bg-red-600"
+                              }`}
+                              disabled={agent.running}
                               aria-label={`Delete ${agent.name}`}
                               title="Delete"
+                              onClick={() => {
+                                if (agent.running) return;
+                                setDeleteTarget(agent);
+                              }}
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -1192,6 +1214,33 @@ export default function AgentManagementPage() {
                     {isSubmitting ? "Submitting..." : "Submit"}
                   </Button>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-[28px] border border-rose-200/60 bg-white/95 p-6 shadow-[0_25px_45px_rgba(15,23,42,0.35)]">
+              <div className="space-y-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-rose-500">Delete agent</p>
+                <h3 className="text-2xl font-semibold text-slate-900">Confirm deletion</h3>
+                <p className="text-sm text-slate-600">
+                  Are you sure you want to delete <span className="font-semibold">{deleteTarget.name}</span>? This action
+                  will remove the agent and stop its activities.
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-red-500 text-white hover:bg-red-600"
+                  onClick={handleConfirmDelete}
+                >
+                  Delete
+                </Button>
               </div>
             </div>
           </div>

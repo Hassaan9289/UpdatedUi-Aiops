@@ -1,22 +1,23 @@
 'use client';
 
+import { AuthGate } from "@/components/auth/AuthGate";
+import { RequireRole } from "@/components/auth/RequireRole";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { HealthPill } from "@/components/ui/HealthPill";
+import { KpiCard } from "@/components/ui/KpiCard";
+import { MiniList } from "@/components/ui/MiniList";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AGENT_HELLO_HOST } from "@/config/api";
+import { useSessionStore } from "@/lib/auth/session";
+import { getEnterpriseLogo } from "@/lib/enterpriseLogos";
+import { useAIOpsStore } from "@/lib/store";
+import { useAgents, type AgentSummary } from "@/lib/useAgents";
+import { useLottieLoader } from "@/lib/useLottieLoader";
 import { Activity, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import { useAIOpsStore } from "@/lib/store";
-import { Card } from "@/components/ui/card";
-import { KpiCard } from "@/components/ui/KpiCard";
-import { HealthPill } from "@/components/ui/HealthPill";
-import { MiniList } from "@/components/ui/MiniList";
-import { AuthGate } from "@/components/auth/AuthGate";
-import { RequireRole } from "@/components/auth/RequireRole";
 import topAnimation from "../../../../Guy talking to Robot _ AI Help.json";
-import { useAgents, type AgentSummary } from "@/lib/useAgents";
-import { useSessionStore } from "@/lib/auth/session";
-import { Button } from "@/components/ui/button";
-import { useLottieLoader } from "@/lib/useLottieLoader";
-import { AGENT_HELLO_HOST } from "@/config/api";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 type BackendIncident = {
   sys_id?: string;
@@ -774,6 +775,20 @@ export default function DashboardPage() {
                           {agent.version ?? agent.type}
                         </p>
                       </div>
+                      {(() => {
+                        const logoUrl = getEnterpriseLogo(agent.enterprise);
+                        const isServiceNow = (agent.enterprise ?? "").trim().toLowerCase() === "servicenow";
+                        if (!logoUrl) {
+                          return <div className="h-10 w-10" aria-hidden="true" />;
+                        }
+                        return (
+                          <img
+                            src={logoUrl}
+                            alt={`${agent.enterprise ?? "Enterprise"} logo`}
+                            className={`rounded-md object-contain ${isServiceNow ? "h-10 w-24" : "h-10 w-10"}`}
+                          />
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-white/70">Real-time: {agent.running ? 'Running' : 'Stopped'}</p>
