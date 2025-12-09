@@ -179,6 +179,9 @@ export default function DashboardPage() {
   };
   const [agentLogs, setAgentLogs] = useState<Record<string, { t: string; m: string }[]>>({});
   const [confirm, setConfirm] = useState<{ name: string; action: 'start' | 'stop' } | null>(null);
+  const [serviceNowCount, setServiceNowCount] = useState<number | null>(null);
+  const serviceNowCountRetryRef = useRef<number | null>(null);
+  const [serviceNowCountLoading, setServiceNowCountLoading] = useState(false);
 
   const topAnomalies = useMemo(() => anomalies.slice(0, 4), [anomalies]);
 
@@ -323,6 +326,76 @@ export default function DashboardPage() {
     setDraftMessage("");
     queueAgentResponse("I am Agent and I'm ready to help.");
   }, [chatAgent]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (serviceNowCountRetryRef.current) {
+      clearTimeout(serviceNowCountRetryRef.current);
+      serviceNowCountRetryRef.current = null;
+    }
+    const controller = new AbortController();
+    const serviceNowAgent = agents.find(
+      (agent) =>
+        agent.running &&
+        !!agent.port &&
+        (agent.enterprise ?? agent.type ?? "").toLowerCase().includes("servicenow"),
+    );
+
+    if (!serviceNowAgent) {
+      setServiceNowCountLoading(false);
+      setServiceNowCount(null);
+      return () => {
+        controller.abort();
+      };
+    }
+
+    const fetchCount = async (allowRetry: boolean) => {
+      setServiceNowCountLoading(true);
+      try {
+        const response = await fetch(
+          `${AGENT_HELLO_HOST}:${serviceNowAgent.port}/agent/serviceNow/count`,
+          {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+            },
+            signal: controller.signal,
+          },
+        );
+        const json = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error("Unable to fetch ServiceNow count");
+        }
+        const value = Number(json?.count);
+        if (!isCancelled) {
+          setServiceNowCount(Number.isFinite(value) ? value : null);
+          setServiceNowCountLoading(false);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setServiceNowCount(null);
+          setServiceNowCountLoading(false);
+          if (allowRetry) {
+            serviceNowCountRetryRef.current = window.setTimeout(() => {
+              fetchCount(false);
+            }, 1500);
+          }
+        }
+      }
+    };
+
+    fetchCount(true);
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+      if (serviceNowCountRetryRef.current) {
+        clearTimeout(serviceNowCountRetryRef.current);
+        serviceNowCountRetryRef.current = null;
+      }
+      setServiceNowCountLoading(false);
+    };
+  }, [agents]);
 
   const handleSendMessage = async () => {
     if (!chatAgent || !draftMessage.trim()) return;
@@ -800,9 +873,11 @@ export default function DashboardPage() {
       setSelectedClosedIncidentId(incidentKey(recentClosed[0], 0));
     }
   }, [incidentKey, recentClosed, selectedClosedIncidentId]);
-  const activeDisplayValue = backendLoading ? <LoadingSpinner /> : (
-    backendData?.activeCount ?? metrics.incidents
-  ).toString();
+  const totalIncidentsDisplayValue = serviceNowCountLoading
+    ? <LoadingSpinner />
+    : serviceNowCount !== null
+      ? serviceNowCount.toString()
+      : "--";
   const resolvedDisplayValue = backendLoading ? <LoadingSpinner /> : resolvedCount.toString();
 
   return (
@@ -843,8 +918,8 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-semibold text-slate-900">{activeDisplayValue}</p>
-                <p className="text-sm text-slate-600">Active Incidents</p>
+                <p className="text-3xl font-semibold text-slate-900">{totalIncidentsDisplayValue}</p>
+                <p className="text-sm text-slate-600">Total Incidents</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-semibold text-slate-900">{resolvedDisplayValue}</p>
@@ -866,13 +941,15 @@ export default function DashboardPage() {
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              label="Active incidents"
-              value={activeDisplayValue}
+              label="Total incidents"
+              value={totalIncidentsDisplayValue}
               delta="-18% vs last week"
               trend="down"
               icon={<ShieldIcon />}
               caption={
-                backendData ? "Currently active incidents from backend" : "Sev-1 automation closed 3 in the past day"
+                serviceNowCount !== null
+                  ? "ServiceNow-reported total incidents"
+                  : "ServiceNow agent not available"
               }
             />
             <KpiCard
