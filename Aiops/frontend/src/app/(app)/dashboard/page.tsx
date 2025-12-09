@@ -1139,7 +1139,7 @@ export default function DashboardPage() {
                   <div className="pt-6">
                     <Link
                       to="/agent-management"
-                      className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-red-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(244,63,94,0.3)] ring-1 ring-white/10 transition hover:translate-x-0.5 hover:shadow-[0_14px_34px_rgba(248,113,113,0.4)]"
+                      className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-[#0ea5e9] via-[#22c55e] to-[#0ea5e9] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(34,197,94,0.35)] ring-1 ring-white/20 transition hover:translate-x-0.5 hover:shadow-[0_12px_28px_rgba(14,165,233,0.35)]"
                     >
                       Go to agent management
                       <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
