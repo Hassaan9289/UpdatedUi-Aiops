@@ -959,16 +959,23 @@ export default function DashboardPage() {
                       </div>
                       {(() => {
                         const logoUrl = getEnterpriseLogo(agent.enterprise);
-                        const isServiceNow = (agent.enterprise ?? "").trim().toLowerCase() === "servicenow";
+                        const enterpriseKey = (agent.enterprise ?? "").trim().toLowerCase();
+                        const isServiceNow = enterpriseKey === "servicenow";
+                        const isMule = enterpriseKey.includes("mule");
                         if (!logoUrl) {
                           return <div className="h-10 w-10" aria-hidden="true" />;
                         }
                         return (
-                          <img
-                            src={logoUrl}
-                            alt={`${agent.enterprise ?? "Enterprise"} logo`}
-                            className={`rounded-md object-contain ${isServiceNow ? "h-10 w-24" : "h-10 w-10"}`}
-                          />
+                          <div
+                            className={`rounded-full bg-white/80 p-1 shadow-sm ${isMule ? "ring-2 ring-sky-200" : ""}`}
+                            aria-label={`${agent.enterprise ?? "Enterprise"} logo`}
+                          >
+                            <img
+                              src={logoUrl}
+                              alt={`${agent.enterprise ?? "Enterprise"} logo`}
+                              className={`object-contain ${isServiceNow ? "h-10 w-24" : "h-10 w-10"}`}
+                            />
+                          </div>
                         );
                       })()}
                     </div>
@@ -978,7 +985,7 @@ export default function DashboardPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-radius:100px border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500/85 disabled:opacity-50 border-radius:10px"
+                          className="border-none bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition hover:shadow-[0_10px_24px_rgba(16,185,129,0.42)] hover:scale-[1.01] rounded-full px-4 disabled:opacity-50 disabled:shadow-none disabled:scale-100"
                           onClick={() => requestToggle(agent.name, 'start')}
                           disabled={agent.running}
                         >
@@ -987,7 +994,7 @@ export default function DashboardPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-rose-500 bg-rose-500 text-white hover:bg-rose-500/85 disabled:opacity-50 rounded-full border"
+                          className="border-none bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition hover:shadow-[0_10px_24px_rgba(244,63,94,0.42)] hover:scale-[1.01] rounded-full px-4 disabled:opacity-50 disabled:shadow-none disabled:scale-100"
                           onClick={() => requestToggle(agent.name, 'stop')}
                           disabled={!agent.running}
                         >
