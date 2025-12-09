@@ -92,6 +92,11 @@ export default function AgentManagementPage() {
   const totalAgents = agents.length;
   const onlineAgents = useMemo(() => agents.filter((a) => a.running).length, [agents]);
   const offlineAgents = Math.max(0, totalAgents - onlineAgents);
+  const getAgentDisplayTime = (agent: AgentSummary) => {
+    if (agent.running) return agent.startTime ?? agent.lastActionTime ?? agent.createdAt ?? "";
+    if (agent.stopTime) return agent.stopTime;
+    return agent.createdAt ?? agent.lastActionTime ?? "";
+  };
   const agentPieGradient = useMemo(() => {
     const onlineColor = "#34d399";
     const offlineColor = "#d1d5db";
@@ -120,7 +125,7 @@ export default function AgentManagementPage() {
         case "port":
           return agent.running && agent.port ? agent.port : Number.MAX_SAFE_INTEGER;
         case "lastModified": {
-          const ts = new Date(agent.lastActionTime).getTime();
+          const ts = new Date(getAgentDisplayTime(agent)).getTime();
           return Number.isFinite(ts) ? ts : 0;
         }
         default:
@@ -832,8 +837,14 @@ export default function AgentManagementPage() {
                         </td>
                         <td className="px-4 py-3 text-center text-slate-700">{agent.type || "Agent"}</td>
                         <td className="px-4 py-3 text-center text-slate-700">
-                          {agent.running ? "Started at " : "Stopped at "}
-                          {agent.lastActionTime}
+                          {(() => {
+                            const started = agent.running;
+                            const time = started
+                              ? agent.startTime ?? agent.lastActionTime
+                              : agent.stopTime ?? agent.lastActionTime ?? agent.createdAt ?? "N/A";
+                            const label = started ? "Started at " : agent.stopTime ? "Stopped at " : "Created at ";
+                            return `${label}${time ?? "N/A"}`;
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-center text-slate-700">{portLabel}</td>
                         <td className="px-4 py-3 text-center text-slate-700">

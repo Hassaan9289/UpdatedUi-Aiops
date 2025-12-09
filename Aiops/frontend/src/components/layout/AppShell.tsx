@@ -189,24 +189,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </h1>
           <div className="flex flex-wrap items-center gap-3">
             <ThemeToggle />
-            <div className="text-right text-sm">
-              <Link to="/account" className="font-semibold text-[var(--text)] transition hover:text-[var(--accent)]">
-                {user?.email ?? "Unknown user"}
-              </Link>
-              {role && (
-                <div className="mt-1 flex justify-end">
-                  <Badge className="capitalize">
-                    {role}
-                  </Badge>
-                </div>
-              )}
-            </div>
-            <Link to="/account">
-              <Button variant="muted" className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--card-muted)]">
-                <UserCircle2 className="h-4 w-4" />
-                Profile
-              </Button>
-            </Link>
             <Button
               variant="destructive"
               className="flex items-center gap-2 rounded-full px-5 py-2 text-sm shadow-[0_6px_14px_rgba(244,63,94,0.25)]"

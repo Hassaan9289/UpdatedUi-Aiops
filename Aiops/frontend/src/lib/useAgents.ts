@@ -18,6 +18,9 @@ export type AgentSummary = {
   version?: string;
   lastActionTime: string;
   port?: number | null;
+  startTime?: string | null;
+  stopTime?: string | null;
+  createdAt?: string | null;
 };
 
 type AgentApiItem = {
@@ -31,6 +34,9 @@ type AgentApiItem = {
   type?: string;
   version?: string;
   port?: number;
+  start_time?: string | null;
+  stop_time?: string | null;
+  created_at?: string | null;
 };
 
 type AgentOverride = {
@@ -51,18 +57,30 @@ export const formatCurrentTime = () => {
   });
 };
 
-const toAgentSummary = (agent: AgentApiItem): AgentSummary => ({
-  agentId: agent.agentId,
-  name: agent.name ?? "Unknown agent",
-  zone: agent.zone ?? "N/A",
-  status: agent.status === "RUNNING" ? "healthy" : "warning",
-  running: agent.status === "RUNNING",
-  type: agent.subType ?? agent.agentType ?? agent.type ?? "Agent",
-  enterprise: agent.enterprise ?? agent.subType ?? null,
-  version: agent.version ?? "v1.0.0",
-  lastActionTime: formatCurrentTime(),
-  port: agent.port ?? null,
-});
+const toAgentSummary = (agent: AgentApiItem): AgentSummary => {
+  const running = agent.status === "RUNNING" || agent.status === "STARTED";
+  const startTime = agent.start_time ?? null;
+  const stopTime = agent.stop_time ?? null;
+  const createdAt = agent.created_at ?? null;
+  const lastActionTime = running
+    ? startTime ?? formatCurrentTime()
+    : stopTime ?? createdAt ?? formatCurrentTime();
+  return {
+    agentId: agent.agentId,
+    name: agent.name ?? "Unknown agent",
+    zone: agent.zone ?? "N/A",
+    status: running ? "healthy" : "warning",
+    running,
+    type: agent.subType ?? agent.agentType ?? agent.type ?? "Agent",
+    enterprise: agent.enterprise ?? agent.subType ?? null,
+    version: agent.version ?? "v1.0.0",
+    lastActionTime,
+    port: agent.port ?? null,
+    startTime,
+    stopTime,
+    createdAt,
+  };
+};
 
 const loadOverrides = (): Record<number, AgentOverride> => {
   if (typeof window === "undefined") {
@@ -184,6 +202,8 @@ export const useAgents = () => {
                   ...agent,
                   running: action === "start",
                   status: action === "start" ? "healthy" : "warning",
+                  startTime: action === "start" ? formatCurrentTime() : agent.startTime ?? null,
+                  stopTime: action === "stop" ? formatCurrentTime() : agent.stopTime ?? null,
                   lastActionTime: formatCurrentTime(),
                   port: serverPort ?? agent.port,
                 }
@@ -238,6 +258,9 @@ export const useAgents = () => {
           port: agent.port ?? null,
           version: agent.version,
           lastActionTime: agent.lastActionTime ?? formatCurrentTime(),
+          startTime: agent.startTime ?? null,
+          stopTime: agent.stopTime ?? null,
+          createdAt: agent.createdAt ?? formatCurrentTime(),
         },
         ...prev,
       ]);
