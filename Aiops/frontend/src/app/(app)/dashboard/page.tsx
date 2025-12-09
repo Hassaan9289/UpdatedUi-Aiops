@@ -205,6 +205,24 @@ export default function DashboardPage() {
   const [hoveredSegment, setHoveredSegment] = useState<"online" | "offline" | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const agentMixCardRef = useRef<HTMLDivElement | null>(null);
+
+  const formatMuleResponse = (raw: string): string => {
+    if (!raw) return "No response from agent.";
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(raw, "text/html");
+      const title = doc.querySelector("h1,h2,h3,h4,h5,h6")?.textContent?.trim();
+      const items = Array.from(doc.querySelectorAll("li")).map((li) => li.textContent?.trim()).filter(Boolean);
+      if (items.length) {
+        const heading = title ? `${title}` : "Agent response";
+        return [heading, ...items.map((item) => `• ${item}`)].join("\n");
+      }
+      const bodyText = doc.body.textContent ?? "";
+      return bodyText.trim() || raw;
+    } catch {
+      return raw;
+    }
+  };
   const agentMixGradient = useMemo(() => {
     const onlineColor = "#22c55e";
     const offlineColor = "#cbd5e1";
@@ -257,10 +275,9 @@ export default function DashboardPage() {
 
   const handleSendMessage = async () => {
     if (!chatAgent || !draftMessage.trim()) return;
+    const isMuleAgent =
+      (chatAgent.enterprise ?? chatAgent.type ?? "").toLowerCase().includes("mule");
     const port = chatAgent.port;
-    if (!port) {
-      return;
-    }
     const userMessage = {
       speaker: "You",
       text: draftMessage.trim(),
@@ -270,21 +287,67 @@ export default function DashboardPage() {
     setDraftMessage("");
     inputRef.current?.focus();
 
+    setIsTyping(true);
+
     try {
-      const response = await fetch(`${AGENT_HELLO_HOST}:${port}/hello-agent`, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: userMessage.text }),
-      });
-      const data = await response.json();
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      queueAgentResponse(data?.reply ?? "Sorry, I could not respond right now.");
+      let data: any = null;
+      if (isMuleAgent) {
+        if (!port) {
+          throw new Error("Agent port is unavailable");
+        }
+        const muleEndpoint = `${AGENT_HELLO_HOST}:${port}/agent/mule/chat`;
+        const mulePayload = {
+          message: userMessage.text,
+          agent_id: String(chatAgent.agentId ?? chatAgent.name ?? ""),
+        };
+        const response = await fetch(muleEndpoint, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(mulePayload),
+        });
+        const muleJson = await response.json().catch(() => null);
+        data = muleJson;
+        if (!response.ok) {
+          const msg = muleJson?.message ?? "Unable to reach mule agent";
+          throw new Error(msg);
+        }
+      } else {
+        if (!port) {
+          throw new Error("Agent port is unavailable");
+        }
+        const response = await fetch(`${AGENT_HELLO_HOST}:${port}/hello-agent`, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: userMessage.text }),
+        });
+        data = await response.json();
+        if (!response.ok) {
+          throw new Error("Unable to reach agent");
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const rawReply = data?.reply ?? data?.message ?? "Sorry, I could not respond right now.";
+      const replyText =
+        isMuleAgent && typeof rawReply === "string" ? formatMuleResponse(rawReply) : rawReply;
+      setChatMessages((prev) => [
+        ...prev,
+        { speaker: chatAgent.name, text: replyText, id: Date.now() + 3 },
+      ]);
+      setIsTyping(false);
     } catch (error) {
       console.error("Chat error", error);
-      queueAgentResponse("I couldn't reach the assistant, please try again later.");
+      const fallback = "I couldn't reach the assistant, please try again later.";
+      setChatMessages((prev) => [
+        ...prev,
+        { speaker: chatAgent.name, text: fallback, id: Date.now() + 4 },
+      ]);
+      setIsTyping(false);
     }
   };
 
@@ -915,7 +978,7 @@ export default function DashboardPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500/85 disabled:opacity-50"
+                          className="border-radius:100px border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500/85 disabled:opacity-50 border-radius:10px"
                           onClick={() => requestToggle(agent.name, 'start')}
                           disabled={agent.running}
                         >
@@ -924,7 +987,7 @@ export default function DashboardPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-rose-500 bg-rose-500 text-white hover:bg-rose-500/85 disabled:opacity-50"
+                          className="border-rose-500 bg-rose-500 text-white hover:bg-rose-500/85 disabled:opacity-50 rounded-full border"
                           onClick={() => requestToggle(agent.name, 'stop')}
                           disabled={!agent.running}
                         >
