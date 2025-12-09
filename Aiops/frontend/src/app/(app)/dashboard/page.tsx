@@ -4,9 +4,7 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { RequireRole } from "@/components/auth/RequireRole";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { HealthPill } from "@/components/ui/HealthPill";
 import { KpiCard } from "@/components/ui/KpiCard";
-import { MiniList } from "@/components/ui/MiniList";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AGENT_HELLO_HOST } from "@/config/api";
 import { useSessionStore } from "@/lib/auth/session";
@@ -14,9 +12,10 @@ import { getEnterpriseLogo } from "@/lib/enterpriseLogos";
 import { useAIOpsStore } from "@/lib/store";
 import { useAgents, type AgentSummary } from "@/lib/useAgents";
 import { useLottieLoader } from "@/lib/useLottieLoader";
-import { Activity, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
+import { ArrowRight, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
+import { Link } from "react-router-dom";
 import topAnimation from "../../../../Guy talking to Robot _ AI Help.json";
 
 type BackendIncident = {
@@ -199,6 +198,18 @@ export default function DashboardPage() {
   const [typingAnimation, setTypingAnimation] = useState<{ messageId: number; text: string } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const onlineAgentCount = useMemo(() => agents.filter((a) => a.running).length, [agents]);
+  const totalAgentCount = agents.length;
+  const offlineAgentCount = Math.max(0, totalAgentCount - onlineAgentCount);
+  const agentMixGradient = useMemo(() => {
+    const onlineColor = "#22c55e";
+    const offlineColor = "#cbd5e1";
+    if (!totalAgentCount) return `conic-gradient(${offlineColor} 0% 100%)`;
+    const onlinePercent = Math.round((onlineAgentCount / totalAgentCount) * 100);
+    if (onlinePercent <= 0) return `conic-gradient(${offlineColor} 0% 100%)`;
+    if (onlinePercent >= 100) return `conic-gradient(${onlineColor} 0% 100%)`;
+    return `conic-gradient(${onlineColor} 0% ${onlinePercent}%, ${offlineColor} ${onlinePercent}% 100%)`;
+  }, [onlineAgentCount, totalAgentCount]);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const anchor = chatBottomRef.current;
@@ -665,16 +676,16 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-semibold text-slate-900">50</p>
-                <p className="text-sm text-slate-600">Completed Trips</p>
+                <p className="text-3xl font-semibold text-slate-900">{activeDisplayValue}</p>
+                <p className="text-sm text-slate-600">Active Incidents</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-semibold text-slate-900">08</p>
-                <p className="text-sm text-slate-600">Upcoming Trips</p>
+                <p className="text-3xl font-semibold text-slate-900">{resolvedDisplayValue}</p>
+                <p className="text-sm text-slate-600">Resolved Incidents</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-semibold text-slate-900">10</p>
-                <p className="text-sm text-slate-600">Cancelled Trips</p>
+                <p className="text-3xl font-semibold text-slate-900">{metrics.mttr}</p>
+                <p className="text-sm text-slate-600">MTTR</p>
               </div>
             </div>
           </section>
@@ -704,49 +715,48 @@ export default function DashboardPage() {
               icon={<ShieldIcon />}
               caption="Filtered by backend incidents service"
             />
-            <KpiCard
-              label="MTTR"
-              value={metrics.mttr}
-              delta="11m faster"
-              trend="up"
-              icon={<Activity className="h-5 w-5" />}
-              caption="AI Agents recommended 4 mitigations"
-            />
-            <KpiCard
-              label="Automation rate"
-              value={metrics.automation}
-              delta="+6 pts"
-              icon={<Bot className="h-5 w-5" />}
-              caption="Runbooks executed automatically in 55% of incidents"
-            />
-          </section>
-
-          <section className="grid gap-6 lg:grid-cols-3">
-            <Card className="space-y-3 lg:col-span-2">
-              <p className="section-title">Service health</p>
-              <div className="grid gap-3 md:grid-cols-2">
-                {services.map((service) => (
-                  <HealthPill service={service} key={service.id} />
-                ))}
+            <Card className="relative overflow-hidden border border-white/10 bg-gradient-to-br from-white/95 to-slate-50 shadow-[0_14px_35px_rgba(15,23,42,0.12)] xl:col-span-2">
+              <div className="flex items-start justify-between gap-4 p-5">
+                <div className="flex flex-col justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Agent mix</p>
+                    <p className="text-2xl font-semibold text-slate-900">
+                      {totalAgentCount || 0} <span className="text-base font-normal text-slate-500">total</span>
+                    </p>
+                    <div className="flex items-center gap-4 pt-2 text-sm">
+                      <div className="flex items-center gap-2 text-slate-700">
+                        <span className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]" />
+                        <span className="font-medium">Online</span>
+                        <span className="text-emerald-600 font-semibold">{onlineAgentCount}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-700">
+                        <span className="h-3 w-3 rounded-full bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.25)]" />
+                        <span className="font-medium">Offline</span>
+                        <span className="text-slate-500 font-semibold">{offlineAgentCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    to="/agent-management"
+                    className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-red-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(244,63,94,0.3)] ring-1 ring-white/10 transition hover:translate-x-0.5 hover:shadow-[0_14px_34px_rgba(248,113,113,0.4)]"
+                  >
+                    Go to agent management
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </Link>
+                </div>
+                <div className="relative h-40 w-40 sm:h-48 sm:w-48">
+                  <div
+                    className="absolute inset-0 rounded-full shadow-[0_14px_28px_rgba(15,23,42,0.18)]"
+                    style={{ backgroundImage: agentMixGradient }}
+                    aria-hidden="true"
+                  />
+                  <div
+                    className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-white/0 opacity-80"
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
             </Card>
-            <MiniList
-              title="Recent anomalies"
-              items={topAnomalies.map((anomaly) => ({
-                id: anomaly.id,
-                title: `${anomaly.metric} - ${anomaly.value} (baseline ${anomaly.baseline})`,
-                meta: `Detected ${new Date(anomaly.detectedAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}`,
-                status:
-                  anomaly.severity === "critical"
-                    ? "err"
-                    : anomaly.severity === "high"
-                    ? "warn"
-                    : "ok",
-              }))}
-            />
           </section>
 
           {/* Agent Management Section */}
