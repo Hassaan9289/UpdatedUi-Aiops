@@ -223,6 +223,15 @@ export default function DashboardPage() {
       return raw;
     }
   };
+  const serializeAgentResponse = (payload: unknown): string => {
+    if (payload === null || payload === undefined) return "No response from agent.";
+    if (typeof payload === "string") return payload;
+    try {
+      return JSON.stringify(payload, null, 2);
+    } catch {
+      return String(payload);
+    }
+  };
   const agentMixGradient = useMemo(() => {
     const onlineColor = "#22c55e";
     const offlineColor = "#cbd5e1";
@@ -277,6 +286,8 @@ export default function DashboardPage() {
     if (!chatAgent || !draftMessage.trim()) return;
     const isMuleAgent =
       (chatAgent.enterprise ?? chatAgent.type ?? "").toLowerCase().includes("mule");
+    const isServiceNowAgent =
+      (chatAgent.enterprise ?? chatAgent.type ?? "").toLowerCase().includes("servicenow");
     const port = chatAgent.port;
     const userMessage = {
       speaker: "You",
@@ -309,9 +320,34 @@ export default function DashboardPage() {
           body: JSON.stringify(mulePayload),
         });
         const muleJson = await response.json().catch(() => null);
+        console.log("Mule chat response", { status: response.status, data: muleJson });
         data = muleJson;
         if (!response.ok) {
           const msg = muleJson?.message ?? "Unable to reach mule agent";
+          throw new Error(msg);
+        }
+      } else if (isServiceNowAgent) {
+        if (!port) {
+          throw new Error("Agent port is unavailable");
+        }
+        const serviceNowEndpoint = `${AGENT_HELLO_HOST}:${port}/agent/serviceNow/chat`;
+        const serviceNowPayload = {
+          message: userMessage.text,
+          agent_id: String(chatAgent.agentId ?? chatAgent.name ?? ""),
+        };
+        const response = await fetch(serviceNowEndpoint, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(serviceNowPayload),
+        });
+        const serviceNowJson = await response.json().catch(() => null);
+        console.log("ServiceNow chat response", { status: response.status, data: serviceNowJson });
+        data = serviceNowJson;
+        if (!response.ok) {
+          const msg = serviceNowJson?.message ?? "Unable to reach ServiceNow agent";
           throw new Error(msg);
         }
       } else {
@@ -332,9 +368,11 @@ export default function DashboardPage() {
         }
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const rawReply = data?.reply ?? data?.message ?? "Sorry, I could not respond right now.";
+      const rawReply = data?.reply ?? data?.message ?? data ?? "Sorry, I could not respond right now.";
       const replyText =
-        isMuleAgent && typeof rawReply === "string" ? formatMuleResponse(rawReply) : rawReply;
+        isMuleAgent && typeof rawReply === "string"
+          ? formatMuleResponse(rawReply)
+          : serializeAgentResponse(rawReply);
       setChatMessages((prev) => [
         ...prev,
         { speaker: chatAgent.name, text: replyText, id: Date.now() + 3 },
