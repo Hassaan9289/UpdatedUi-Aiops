@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { AGENT_ORG_KEY } from "@/config/agent";
 import { AGENT_API_BASE } from "@/config/api";
 import { AgentSummary, formatCurrentTime, useAgents } from "@/lib/useAgents";
-import { Bot, Search, Settings } from "lucide-react";
+import { Bot, Search, Settings, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const agentStatusVariant: Record<string, "success" | "warning"> = {
@@ -78,16 +78,22 @@ export default function AgentManagementPage() {
   const [isValidatingName, setIsValidatingName] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
+  const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
+  const maxAgentNameLength = 20;
   const [sortBy, setSortBy] = useState<"name" | "type" | "lastModified" | "port" | "status">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const filteredAgents = useMemo(
     () =>
-      agents.filter((agent) =>
-        agent.name.toLowerCase().includes(searchTerm.trim().toLowerCase()),
-      ),
-    [agents, searchTerm],
+      agents.filter((agent) => {
+        const matchesSearch = agent.name.toLowerCase().includes(searchTerm.trim().toLowerCase());
+        const matchesStatus =
+          statusFilter === "all" ? true : statusFilter === "online" ? agent.running : !agent.running;
+        return matchesSearch && matchesStatus;
+      }),
+    [agents, searchTerm, statusFilter],
   );
   const totalAgents = agents.length;
   const onlineAgents = useMemo(() => agents.filter((a) => a.running).length, [agents]);
@@ -155,10 +161,28 @@ export default function AgentManagementPage() {
     const start = (currentPage - 1) * pageSize;
     return sortedAgents.slice(start, start + pageSize);
   }, [currentPage, sortedAgents]);
+  const paginatedAgentIds = useMemo(
+    () =>
+      paginatedAgents
+        .map((agent) => agent.agentId)
+        .filter((id): id is string => Boolean(id)),
+    [paginatedAgents],
+  );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter]);
+
+  useEffect(() => {
+    setSelectedAgentIds((prev) =>
+      prev.filter((id) => agents.some((agent) => (agent.agentId ?? "") === id)),
+    );
+  }, [agents]);
+
+  const selectedAgents = useMemo(
+    () => agents.filter((agent) => agent.agentId && selectedAgentIds.includes(agent.agentId)),
+    [agents, selectedAgentIds],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -612,6 +636,36 @@ export default function AgentManagementPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    const deletableAgents = selectedAgents.filter((agent) => !agent.running && agent.agentId);
+    for (const agent of deletableAgents) {
+      try {
+        await deleteAgent(agent.agentId!);
+      } catch (err) {
+        // individual delete failures are surfaced by deleteAgent
+      }
+    }
+    setSelectedAgentIds((prev) =>
+      prev.filter((id) => !deletableAgents.some((agent) => agent.agentId === id)),
+    );
+  };
+
+  const toggleSelectAllOnPage = () => {
+    const allSelected = paginatedAgentIds.every((id) => selectedAgentIds.includes(id));
+    if (allSelected) {
+      setSelectedAgentIds((prev) => prev.filter((id) => !paginatedAgentIds.includes(id)));
+    } else {
+      setSelectedAgentIds((prev) => [...prev, ...paginatedAgentIds.filter((id) => !prev.includes(id))]);
+    }
+  };
+
+  const toggleSelectAgent = (agentId?: string) => {
+    if (!agentId) return;
+    setSelectedAgentIds((prev) =>
+      prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId],
+    );
+  };
+
   const serverFields = useMemo(
     () => (
       <div className="mt-4 rounded-[24px] border border-slate-200/80 bg-slate-50/90 p-4 shadow-inner">
@@ -787,11 +841,68 @@ export default function AgentManagementPage() {
               </div>
             </div>
           )}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-800 shadow-[0_10px_24px_rgba(15,23,42,0.07)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-500">Filter</span>
+              {(["all", "online", "offline"] as const).map((option) => {
+                const isActive = statusFilter === option;
+                const labels: Record<typeof option, string> = { all: "All", online: "Online", offline: "Offline" };
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setStatusFilter(option)}
+                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 transition ${
+                      isActive
+                        ? "border border-slate-400 bg-slate-200 text-slate-900 shadow-[0_4px_10px_rgba(15,23,42,0.08)]"
+                        : "border border-black bg-white text-slate-900 hover:bg-slate-50"
+                    }`}
+                    aria-pressed={isActive}
+                  >
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        option === "online" ? "bg-emerald-500" : option === "offline" ? "bg-slate-500" : "bg-slate-700"
+                      }`}
+                    />
+                    {labels[option]}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm text-slate-600">
+                {selectedAgents.length} selected
+                {selectedAgents.some((agent) => agent.running) && (
+                  <span className="text-xs text-amber-600"> (online agents cannot be deleted)</span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                disabled={
+                  selectedAgents.length === 0 || selectedAgents.some((agent) => agent.running) || paginatedAgentIds.length === 0
+                }
+                className="inline-flex items-center gap-2 rounded-lg border border-transparent bg-red-500 px-3 py-2 text-sm font-medium text-white shadow-[0_10px_24px_rgba(244,67,54,0.25)] transition enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete selected
+              </button>
+            </div>
+          </div>
           <Card className="overflow-hidden border border-slate-200/80 bg-white/90 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)] mt-2">
             <div className="overflow-x-auto">
               <table className="min-w-[720px] w-full text-sm">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 align-middle">
+                    <th className="w-12 px-4 py-3 text-left align-middle">
+                      <input
+                        type="checkbox"
+                        checked={paginatedAgentIds.length > 0 && paginatedAgentIds.every((id) => selectedAgentIds.includes(id))}
+                        onChange={toggleSelectAllOnPage}
+                        aria-label="Select all agents on this page"
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-left align-middle">
                       <button
                         type="button"
@@ -844,8 +955,18 @@ export default function AgentManagementPage() {
                   {paginatedAgents.map((agent) => {
                     const statusLabel = agent.running ? "Online" : "Offline";
                     const portLabel = agent.running && agent.port ? agent.port : "Agent Not Started";
+                    const isSelected = agent.agentId ? selectedAgentIds.includes(agent.agentId) : false;
                     return (
                       <tr key={agent.name} className="bg-white/85 transition-colors hover:bg-slate-50">
+                        <td className="px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                            checked={isSelected}
+                            onChange={() => toggleSelectAgent(agent.agentId)}
+                            aria-label={`Select ${agent.name}`}
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700 uppercase">
@@ -919,7 +1040,7 @@ export default function AgentManagementPage() {
                   })}
                   {filteredAgents.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                      <td colSpan={7} className="px-4 py-6 text-center text-sm text-slate-500">
                         No agents match your search.
                       </td>
                     </tr>
@@ -1012,12 +1133,18 @@ export default function AgentManagementPage() {
                   {wizardStep === 1 && (
                     <div className="space-y-3">
                       <label className="text-sm font-medium text-slate-600">Agent name</label>
-                      <input
-                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none"
-                        placeholder="Enter agent name"
-                        value={newAgentName}
-                        onChange={(event) => setNewAgentName(event.target.value)}
-                      />
+                      <div className="relative">
+                        <input
+                          className="w-full rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 pr-16 text-lg text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none"
+                          placeholder="Enter agent name"
+                          value={newAgentName}
+                          maxLength={maxAgentNameLength}
+                          onChange={(event) => setNewAgentName(event.target.value.slice(0, maxAgentNameLength))}
+                        />
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">
+                          {newAgentName.length}/{maxAgentNameLength}
+                        </span>
+                      </div>
                     </div>
                   )}
                   {wizardStep === 2 && (
