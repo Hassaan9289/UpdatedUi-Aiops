@@ -109,10 +109,7 @@ export default function LoginPage() {
       <div className="relative flex flex-1 flex-col gap-8 px-6 py-10 sm:px-8 lg:w-1/2 lg:px-12 lg:py-16">
         {/* Top-right login animation (does not affect layout) */}
         <div className="pointer-events-none absolute right-4 top-16 z-10 sm:right-6 sm:top-14 md:right-8 md:top-12 lg:top-10">
-          <div
-            ref={leftAnimRef}
-            className="h-32 w-32 sm:h-40 sm:w-40 md:h-48 md:w-48 lg:h-56 lg:w-56 xl:h-64 xl:w-64"
-          />
+          
         </div>
         <div className="space-y-2">
           <BrandMark />
@@ -121,7 +118,8 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="space-y-4">
-          <h1 className="text-4xl font-semibold leading-tight">Log in to Royal Cyber
+          <h1 className="text-base uppercase tracking-[0.3em] text-slate-700">
+            Login to Royal Cyber AIOPS for Enterprise
           </h1>
         </div>
         <Card className="max-w-2xl space-y-6 border border-[var(--border)] bg-[var(--surface)]/90 p-8 shadow-[0_25px_50px_rgba(15,23,42,0.12)] backdrop-blur-sm">
