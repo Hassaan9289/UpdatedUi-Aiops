@@ -738,7 +738,10 @@ export default function AgentManagementPage() {
         <section className="space-y-6">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
             <div className="min-w-[240px]">
-              <p className="section-title">Agent management</p>
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-slate-300" aria-hidden="true" />
+                <p className="section-title">Agent management</p>
+              </div>
               <p className="text-sm text-white/60">Lifecycle, versioning, and health of deployed agents.</p>
             </div>
             <div className="flex justify-center">

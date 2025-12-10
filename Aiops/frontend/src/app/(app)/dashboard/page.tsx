@@ -11,7 +11,7 @@ import { getEnterpriseLogo } from "@/lib/enterpriseLogos";
 import { useAIOpsStore } from "@/lib/store";
 import { useAgents, type AgentSummary } from "@/lib/useAgents";
 import { useLottieLoader } from "@/lib/useLottieLoader";
-import { ArrowRight, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
+import { AlertTriangle, ArrowRight, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
@@ -1038,7 +1038,10 @@ export default function DashboardPage() {
             <Card className="relative overflow-hidden border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Total incidents</p>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-rose-500" aria-hidden="true" />
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Total incidents</p>
+                  </div>
                   <p className="text-3xl font-semibold text-slate-900">
                     {serviceNowCountLoading || serviceNowIncidentsLoading ? <LoadingSpinner /> : (
                       totalIncidentsNumber !== null ? totalIncidentsNumber : "--"
@@ -1118,7 +1121,10 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between gap-4 p-5" ref={agentMixCardRef}>
                 <div className="relative flex flex-col justify-between gap-4">
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Agent mix</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Agent</span>
+                      <Bot className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                    </div>
                     <p className="text-2xl font-semibold text-slate-900">
                       {totalAgentCount || 0} <span className="text-base font-normal text-slate-500">total</span>
                     </p>
@@ -1286,7 +1292,10 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
-                <p className="section-title whitespace-nowrap px-3">Agent management</p>
+                <div className="flex items-center gap-2 whitespace-nowrap px-3">
+                  <Bot className="h-5 w-5 text-white" aria-hidden="true" />
+                  <p className="section-title">Agent management</p>
+                </div>
                 <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
               </div>
               <p className="text-sm text-white/60 text-center sm:text-right">
@@ -1542,12 +1551,16 @@ export default function DashboardPage() {
           <section id="recent-incidents" className="grid gap-3 lg:grid-cols-[220px_1fr] items-stretch">
             <div className="flex items-center gap-3 lg:col-span-2">
               <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
-              <p className="section-title whitespace-nowrap px-3">Recent closed incidents</p>
+              <div className="flex items-center gap-2 whitespace-nowrap px-3">
+                <AlertTriangle className="h-5 w-5 text-rose-500" aria-hidden="true" />
+                <p className="section-title">Recent closed incidents</p>
+              </div>
               <span className="h-px flex-1 min-w-[96px] bg-slate-400/50" aria-hidden="true" />
             </div>
 
             <Card className="flex flex-col space-y-4 w-fit max-w-[280px]">
               <div className="min-h-[220px] flex-1">
+                <p className="section-title">Incident List</p><br></br>
                 {serviceNowIncidentsLoading ? (
                   <p className="text-sm text-white/70">Loading incidents…</p>
                 ) : serviceNowClosedIncidents.length === 0 ? (
@@ -1573,14 +1586,22 @@ export default function DashboardPage() {
                                 : "border-transparent bg-white/5 text-white hover:bg-white/10"
                             }`}
                           >
-                            <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
-                              {incident.number ?? "Unknown"}
-                            </p>
-                            {isSelected ? (
-                              <span className="text-base text-slate-700">→</span>
-                            ) : (
-                              <span className="text-base text-transparent group-hover:text-slate-400">→</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle
+                                className={`h-4 w-4 ${
+                                  isSelected ? "text-rose-500" : "text-rose-300 group-hover:text-rose-400"
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <p className={`font-semibold ${isSelected ? "text-slate-900" : "text-white"}`}>
+                                {incident.number ?? "Unknown"}
+                              </p>
+                            </div>
+                            <ArrowRight
+                              className={`h-4 w-4 ${
+                                isSelected ? "text-slate-700" : "text-transparent group-hover:text-slate-400"
+                              }`}
+                            />
                           </button>
                         );
                       })}
@@ -1611,14 +1632,19 @@ export default function DashboardPage() {
       <ScrollArea className="h-[520px] lg:h-[460px] pr-3">
         <div className="space-y-4">
           {/* Incident title + short description */}
-          <div className="space-y-1">
-            <p className="text-base font-semibold text-white">
-              {selectedServiceNowIncident.number ?? "Unknown incident"}
-            </p>
-            <p className="text-sm text-white/70">
-              {selectedServiceNowIncident.short_description ??
-                "No description provided."}
-            </p>
+          <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-white/60">Incident ID:</span>
+              <span className="font-semibold text-white">
+                {selectedServiceNowIncident.number ?? "Unknown incident"}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-white/60">Description:</span>
+              <span className="text-white/80">
+                {selectedServiceNowIncident.short_description ?? "No description provided."}
+              </span>
+            </div>
           </div>
 
           {/* Table-style incident fields */}
