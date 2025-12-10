@@ -783,24 +783,36 @@ export default function AgentManagementPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Total agents</p>
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-white/70" aria-hidden="true" />
+                <p className="text-xs uppercase tracking-[0.3em] text-white/70">Total agents</p>
+              </div>
               <p className="text-2xl font-semibold">{totalAgents}</p>
               <p className="text-xs text-emerald-200">+2 new this week</p>
             </Card>
             <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Online</p>
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">Online</p>
+              </div>
               <p className="text-2xl font-semibold">{onlineAgents}</p>
               <p className="text-xs text-emerald-200">All healthy</p>
             </Card>
             <Card className="flex flex-col gap-2 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Offline</p>
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Offline</p>
+              </div>
               <p className="text-2xl font-semibold">{offlineAgents}</p>
               <p className="text-xs text-rose-200">Review connectivity</p>
             </Card>
             <Card className="flex flex-col gap-3 border border-white/10 bg-white/10 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/70">Agent mix</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/70">Agent</p>
+                    <Bot className="h-4 w-4 text-white/70" aria-hidden="true" />
+                  </div>
                   <p className="text-lg font-semibold">{totalAgents} total</p>
                 </div>
                 {totalAgents > 0 ? (
@@ -891,6 +903,14 @@ export default function AgentManagementPage() {
                 Delete selected
               </button>
             </div>
+          </div>
+          <div className="flex items-center gap-3 text-slate-600">
+            <span className="h-px flex-1 min-w-[96px] bg-slate-300/70" aria-hidden="true" />
+            <div className="flex items-center gap-2">
+              <Bot className="h-4 w-4 text-slate-600" aria-hidden="true" />
+              <p className="text-sm font-semibold uppercase tracking-[0.2em]">Agent Registry</p>
+            </div>
+            <span className="h-px flex-1 min-w-[96px] bg-slate-300/70" aria-hidden="true" />
           </div>
           <Card className="overflow-hidden border border-slate-200/80 bg-white/90 text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08)] mt-2">
             <div className="overflow-x-auto">
