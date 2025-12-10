@@ -11,7 +11,7 @@ import { getEnterpriseLogo } from "@/lib/enterpriseLogos";
 import { useAIOpsStore } from "@/lib/store";
 import { useAgents, type AgentSummary } from "@/lib/useAgents";
 import { useLottieLoader } from "@/lib/useLottieLoader";
-import { AlertTriangle, ArrowRight, Bot, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Bot, CheckCircle2, Maximize2, MessageCircle, Minimize2, Pause, Play, Square, User } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
@@ -1011,10 +1011,12 @@ export default function DashboardPage() {
               <div className="text-center">
                 <p className="text-3xl font-semibold text-slate-900">{totalIncidentsDisplayValue}</p>
                 <p className="text-sm text-slate-600">Total Incidents</p>
+                <AlertTriangle className="mx-auto h-6 w-6 text-rose-500" aria-hidden="true" />
               </div>
               <div className="text-center">
                 <p className="text-3xl font-semibold text-slate-900">{resolvedDisplayValue}</p>
                 <p className="text-sm text-slate-600">Resolved Incidents</p>
+                <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-500" aria-hidden="true" />
               </div>
               <div className="text-center">
                 <p className="text-3xl font-semibold text-slate-900">
@@ -1023,6 +1025,7 @@ export default function DashboardPage() {
                   )}
                 </p>
                 <p className="text-sm text-slate-600">Open Incidents</p>
+                <AlertCircle className="mx-auto h-6 w-6 text-rose-500" aria-hidden="true" />
               </div>
             </div>
           </section>
@@ -1122,8 +1125,8 @@ export default function DashboardPage() {
                 <div className="relative flex flex-col justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Agent</span>
-                      <Bot className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                      <span className="text-sm uppercase tracking-[0.3em] text-slate-700">Agent</span>
+                      <Bot className="h-5 w-5 text-slate-700" aria-hidden="true" />
                     </div>
                     <p className="text-2xl font-semibold text-slate-900">
                       {totalAgentCount || 0} <span className="text-base font-normal text-slate-500">total</span>
