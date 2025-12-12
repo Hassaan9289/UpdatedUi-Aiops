@@ -363,24 +363,32 @@ export default function DashboardPage() {
       };
     }
 
+    const serviceNowAgentId = String(serviceNowAgent.agentId ?? serviceNowAgent.name ?? "");
+
     const fetchCount = async (allowRetry: boolean) => {
       setServiceNowCountLoading(true);
       setServiceNowIncidentsLoading(true);
       try {
         const [countResp, detailsResp] = await Promise.all([
           fetch(`${AGENT_HELLO_HOST}:${serviceNowAgent.port}/agent/serviceNow/count`, {
-            method: "GET",
+            method: "POST",
             headers: {
               accept: "application/json",
+              agent_id: serviceNowAgentId,
+              "Content-Type": "application/json",
             },
             signal: controller.signal,
+            body: JSON.stringify({ agent_id: serviceNowAgentId }),
           }),
           fetch(`${AGENT_HELLO_HOST}:${serviceNowAgent.port}/agent/serviceNow/incidentDetails`, {
-            method: "GET",
+            method: "POST",
             headers: {
               accept: "application/json",
+              agent_id: serviceNowAgentId,
+              "Content-Type": "application/json",
             },
             signal: controller.signal,
+            body: JSON.stringify({ agent_id: serviceNowAgentId }),
           }),
         ]);
 
